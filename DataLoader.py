@@ -15,7 +15,8 @@ def load_cac_40_data(start = "2009-06-01"):
     tickers.remove('STLAP.PA')
     tickers.remove('WLN.PA')
     index = ["^FCHI"]
-    tickers = yf.download(list(tickers) + index, start = start, ignore_tz = True)
+    risk_free = ["^IRX"]
+    tickers = yf.download(list(tickers) + index + risk_free, start = start, ignore_tz = True)
     return tickers
 
 def load_vix(start = "2009-06-01"):
@@ -36,40 +37,44 @@ def load_french_consumer_sentiment_index():
     french_csi.index = pd.to_datetime(french_csi.index)
     return french_csi
 
-def load_full_dataset(start = "2009-06-01"):
+def load_full_dataset(start = "2009-06-01") -> pd.DataFrame:
+    """Returns a pd.DataFrame with the full data
+
+    Args:
+        start (str, optional): _description_. Defaults to "2009-06-01".
+
+    Returns:
+        pd.DataFrame: _description_
+    """
 
     cac_40 = load_cac_40_data(start)
     cac_40 = cac_40.reorder_levels([1, 0], axis = 1)
     
-    stocks = cac_40.columns.levels[0].drop("^FCHI")
-
-    train_year = 2014
+    risk_free_rate = cac_40['^IRX', 'Adj Close'].rename("RFR")/(100*252)
+    
+    stocks = cac_40.columns.levels[0].drop(["^FCHI", "^IRX"])
 
     vix = load_vix(start).rename("VIX")
-    vix_scaler = StandardScaler().fit(vix.loc[vix.index.year<=train_year].values.reshape(-1, 1))
-    vix = pd.Series(vix_scaler.transform(vix.values.reshape(-1, 1)).squeeze(), index = vix.index)
+    vix = pd.Series(vix.squeeze(), index = vix.index)
 
     eurusd = load_eur_usd_ex_rate(start).rename("EURUSD").dropna()
-    eurusd_scaler = StandardScaler().fit(eurusd.loc[eurusd.index.year<=train_year].values.reshape(-1, 1))
-    eurusd = pd.Series(eurusd_scaler.transform(eurusd.values.reshape(-1, 1)).squeeze(), index = eurusd.index)
+    eurusd = pd.Series(eurusd.squeeze(), index = eurusd.index)
 
     french_ur = load_french_ur().squeeze()
-    french_ur_scaler = StandardScaler().fit(french_ur.loc[french_ur.index.year<=train_year].values.reshape(-1, 1))
-    french_ur = pd.Series(french_ur_scaler.transform(french_ur.values.reshape(-1, 1)).squeeze(), index = french_ur.index)
+    french_ur = pd.Series(french_ur.squeeze(), index = french_ur.index)
     french_ur_aligned = pd.Series(np.nan, index = cac_40.index)
     french_ur_aligned.update(french_ur)
     french_ur_aligned = french_ur_aligned.ffill().rename("UR")
 
     french_csi = load_french_consumer_sentiment_index().squeeze()
-    french_csi_scaler = StandardScaler().fit(french_csi.loc[french_csi.index.year<=train_year].values.reshape(-1, 1))
-    french_csi = pd.Series(french_csi_scaler.transform(french_csi.values.reshape(-1, 1)).squeeze(), index = french_csi.index)
+    french_csi = pd.Series(french_csi.squeeze(), index = french_csi.index)
     french_csi_aligned = pd.Series(np.nan, index = cac_40.index)
     french_csi_aligned.update(french_csi)
     french_csi_aligned = french_csi_aligned.ffill().rename("CSI")
     
-    common_index = cac_40.index.intersection(vix.index).intersection(eurusd.index).intersection(french_ur_aligned.index).intersection(french_csi_aligned.index)
+    common_index = cac_40.index.intersection(vix.index).intersection(eurusd.index).intersection(french_ur_aligned.index).intersection(french_csi_aligned.index).intersection(risk_free_rate.index)
 
-    lags = [1, 5, 10, 15, 20, 25, 30]
+    lags = [5, 10, 15, 20, 25, 30]
 
     res = {}
 
@@ -79,10 +84,11 @@ def load_full_dataset(start = "2009-06-01"):
 
         stock_features = {}
 
+        stock_features["R"] = np.log(stock_data['Adj Close']).diff(1) - risk_free_rate
+        stock_features["SGN"] = np.sign(stock_features['R'])
+
         for lag in lags:
             stock_features[stock + f"_{lag}"] = np.log(stock_data['Adj Close']).diff(lag)/lag
-        
-        stock_features["SGN"] = np.sign(np.log(stock_data['Adj Close']).diff(1))
 
         stock_features["FCHI"] = np.log(cac_40['^FCHI', 'Adj Close']).diff()
 
@@ -93,8 +99,6 @@ def load_full_dataset(start = "2009-06-01"):
         ranges = pd.concat([high_low, high_close, low_close], axis=1)
         true_range = np.max(ranges, axis=1)
         atr = true_range.rolling(14).mean()
-        atr_scaler = StandardScaler().fit(atr.loc[atr.index.year<=train_year].values.reshape(-1, 1))
-        atr = pd.Series(atr_scaler.transform(atr.values.reshape(-1, 1)).squeeze(), index = atr.index)
         stock_features["ATR"] = atr
 
         # RSI
@@ -105,20 +109,21 @@ def load_full_dataset(start = "2009-06-01"):
         mean_down = down.rolling(14).mean()
         rs = mean_up/mean_down
         rsi = 100*(1 - 1/(1+rs))
-        rsi_scaler = StandardScaler().fit(rsi.loc[rsi.index.year<=train_year].values.reshape(-1, 1))
-        rsi = pd.Series(rsi_scaler.transform(rsi.values.reshape(-1, 1)).squeeze(), index = rsi.index)
         stock_features["RSI"] = rsi
        
         # MACD
         macd = stock_data['Adj Close'].ewm(span = 26, adjust = False).mean() - stock_data['Adj Close'].ewm(span = 12, adjust = False).mean()
-        macd_scaler = StandardScaler().fit(macd.loc[macd.index.year<=train_year].values.reshape(-1, 1))
-        macd = pd.Series(macd_scaler.transform(macd.values.reshape(-1, 1)).squeeze(), index = macd.index)
         stock_features['MACD'] = macd
 
         stock_features["VIX"] = vix
         stock_features["EURUSD"] = eurusd
         stock_features["UR"] = french_ur_aligned
         stock_features["CSI"] = french_csi_aligned
+        
+        # lag the features by 1 day as we are building a model to predict the next day
+        for feature in stock_features.keys():
+            if feature != "SGN" and feature != "R":
+                stock_features[feature] = stock_features[feature].shift(1)
 
         stock_features = pd.concat(stock_features, axis = 1)
 
@@ -126,3 +131,21 @@ def load_full_dataset(start = "2009-06-01"):
 
     res = pd.concat(res, axis = 1).dropna()
     return res
+
+def load_full_dataset_array(start = "2009-06-01"):
+    """Returns a numpy array of shape (time, stocks, features) and the stock names and time index
+
+    Args:
+        start (str, optional): Start time. Defaults to "2009-06-01".
+
+    Returns:
+        _type_: np.array of shape (number of timesteps, stocks, features), list of stock names, np.array of time index
+    """
+    df = load_full_dataset(start)
+    stock_names = df.columns.levels[0]
+    time_index = df.index
+    res = []
+    for stock in stock_names:
+        stock_data = df.loc[:, stock]
+        res.append(stock_data.values)
+    return np.array(res).transpose(1, 0, 2), stock_names, time_index.to_numpy()
