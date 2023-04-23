@@ -3,7 +3,10 @@ import numpy as np
 import pandas as pd
 from collections import defaultdict
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_squared_error, mean_absolute_error, accuracy_score
+from tqdm import tqdm
+from BackTester import BackTester
+from PortfolioConstructor import PortfolioConstructor
+
 
 class Forecaster:
 
@@ -13,129 +16,207 @@ class Forecaster:
         self.time_index = time_index
         self.valid_size = valid_size
         self.test_size = test_size
-        self.n_split = n_splits
+        self.n_splits = n_splits
 
     def get_tscv_splits(self):
-        return utils.time_series_cross_validation(self.dataset, self.time_index, self.valid_size, self.test_size, self.n_split)
-    
-    def get_forecasts(self, time_series_cross_validation, models, stock_names):
-        """Method to get, from each model in models, the train/valid/test prediction metrics and the predictions themselves for the validation and test sets.
+        return utils.time_series_cross_validation(self.dataset, self.time_index, self.valid_size, self.test_size, self.n_splits)
+
+    def evaluate_test_models(self, models, prec_mat, alphas, thetas, lambdas, capital, stock_returns, risk_free, benchmark_returns = None):
+        """Method to fine-tune the models of the validation set and then test them on the test set.
 
         Args:
-            time_series_cross_validation (_type_): _description_
             models (list[Model]): _description_
-            stock_names (list[str]): _description_
+            prec_mat (dict): (key = dates, value = len(alphas) x len(thetas) x returns.shape[1] x returns.shape[1] arrays) 
+            alphas (list): alphas used in GLASSO
+            thetas (list): thetas used in EPO
+            lambdas (list): lambdas used in the portfolio construction
+            capital (float): capital used in the backtest
+            stock_returns (pd.DataFrame): stock_returns used in the backtest
+            risk_free (pd.Series): risk_free asset returns
+            benchmark_returns (pd.Series): benchmark returns
 
         Returns:
-            _type_: _description_
+            tuple: validation forecasts, test forecasts, validation weights, test weights, optimal parameters, validation time index, test time index
         """
+        forecasts_val = defaultdict(list)
+        forecasts_test = defaultdict(list)
 
-        results = {}
-
-        predictions_val = defaultdict(dict)
-        predictions_test = defaultdict(dict)
-
-        train_index_full = []
         valid_index_full = []
         test_index_full = []
 
-        for model in models:
-            results[model.name] = defaultdict(dict)
-            if model.type == "classification":
-                results[model.name]["Accuracy"] = defaultdict(dict)
-            if model.type == "regression":
-                results[model.name]["MSE"] = defaultdict(dict)
-                results[model.name]["MAE"] = defaultdict(dict)
-        
-        for batch in time_series_cross_validation:
-            
+        opt_param_dict = defaultdict(list)
+
+        weights_valid = defaultdict(list)
+        weights_test = defaultdict(list)
+
+        stock_names = self.stock_names
+        time_series_split = self.get_tscv_splits()
+
+        for batch in tqdm(time_series_split):
+
             train, train_index, valid, valid_index, test, test_index = batch
 
-            train_index_full.append(train_index)
             valid_index_full.append(valid_index)
             test_index_full.append(test_index)
-            
+
             n_stocks = train.shape[1]
 
-            for stock in range(n_stocks):
-
-                stock_name = stock_names[stock]
+            for model in models:
                 
-                stock_train = train[:, stock, :]
-                stock_valid = valid[:, stock, :]
-                stock_test = test[:, stock, :]
+                model_pred_valid = dict()
+                model_pred_test = dict()
 
-                y_reg_train = stock_train[:, 0]
-                y_classification_train = stock_train[:, 1]
-                X_train = stock_train[:, 2:]
-                
-                y_reg_valid = stock_valid[:, 0]
-                y_classification_valid = stock_valid[:, 1]
-                X_valid = stock_valid[:, 2:]
+                cls = model.cls
 
-                y_reg_test = stock_test[:, 0]
-                y_classification_test = stock_test[:, 1]
-                X_test = stock_test[:, 2:]
+                for stock in range(n_stocks):
 
-                scaler_X = StandardScaler()
-                scaler_X.fit(X_train)
-                X_train = scaler_X.transform(X_train)
-                X_valid = scaler_X.transform(X_valid)
-                X_test = scaler_X.transform(X_test)
-                
-                scaler_y = StandardScaler()
-                scaler_y.fit(y_reg_train.reshape(-1, 1))
-                y_reg_train = scaler_y.transform(y_reg_train.reshape(-1, 1)).reshape(-1)
-                y_reg_valid = scaler_y.transform(y_reg_valid.reshape(-1, 1)).reshape(-1)
-                y_reg_test = scaler_y.transform(y_reg_test.reshape(-1, 1)).reshape(-1)
+                    stock_name = stock_names[stock]
+                    
+                    stock_train = train[:, stock, :]
+                    stock_valid = valid[:, stock, :]
+                    stock_test = test[:, stock, :]
 
-                for model in models:
+                    y_reg_train = stock_train[:, 0]
+                    y_classification_train = stock_train[:, 1]
+                    X_train = stock_train[:, 2:]
+                    
+                    y_reg_valid = stock_valid[:, 0]
+                    y_classification_valid = stock_valid[:, 1]
+                    X_valid = stock_valid[:, 2:]
 
-                    cls = model.cls
+                    y_reg_test = stock_test[:, 0]
+                    y_classification_test = stock_test[:, 1]
+                    X_test = stock_test[:, 2:]
+
+                    scaler_X = StandardScaler()
+                    scaler_X.fit(X_train)
+                    X_train = scaler_X.transform(X_train)
+                    X_valid = scaler_X.transform(X_valid)
+                    X_test = scaler_X.transform(X_test)
+                    
+                    scaler_y = StandardScaler()
+                    scaler_y.fit(y_reg_train.reshape(-1, 1))
+                    y_reg_train = scaler_y.transform(y_reg_train.reshape(-1, 1)).reshape(-1)
+                    y_reg_valid = scaler_y.transform(y_reg_valid.reshape(-1, 1)).reshape(-1)
+                    y_reg_test = scaler_y.transform(y_reg_test.reshape(-1, 1)).reshape(-1)                    
 
                     if model.type == "classification":
                         
                         fitted_model = cls.fit(X_train, y_classification_train)
 
-                        train_ = fitted_model.predict(X_train)
-                        valid_ = fitted_model.predict(X_valid)
-                        test_ = fitted_model.predict(X_test)
-
-                        results[model.name]["Accuracy"][stock_name]['train'] = results[model.name]["Accuracy"][stock_name].get('train', []) + [accuracy_score(y_classification_train, train_)]
-                        results[model.name]["Accuracy"][stock_name]['valid'] =  results[model.name]["Accuracy"][stock_name].get('valid', []) + [accuracy_score(y_classification_valid, valid_)]
-                        results[model.name]["Accuracy"][stock_name]['test'] = results[model.name]["Accuracy"][stock_name].get('test', []) + [accuracy_score(y_classification_test, test_)]
+                        y_valid_pred = fitted_model.predict(X_valid)
+                        y_test_pred = fitted_model.predict(X_test)
 
                     if model.type == "regression":
-
+                        
                         fitted_model = cls.fit(X_train, y_reg_train)
 
-                        train_ = fitted_model.predict(X_train)
-                        valid_ = fitted_model.predict(X_valid)
-                        test_ = fitted_model.predict(X_test)
-
-                        results[model.name]["MSE"][stock_name]['train'] = results[model.name]["MSE"][stock_name].get('train', []) + [mean_squared_error(y_reg_train, train_)]
-                        results[model.name]["MSE"][stock_name]['valid'] =  results[model.name]["MSE"][stock_name].get('valid', []) + [mean_squared_error(y_reg_valid, valid_)]
-                        results[model.name]["MSE"][stock_name]['test'] = results[model.name]["MSE"][stock_name].get('test', []) + [mean_squared_error(y_reg_test, test_)]
-
-                        results[model.name]["MAE"][stock_name]['train'] = results[model.name]["MAE"][stock_name].get('train', []) + [mean_absolute_error(y_reg_train, train_)]
-                        results[model.name]["MAE"][stock_name]['valid'] =  results[model.name]["MAE"][stock_name].get('valid', []) + [mean_absolute_error(y_reg_valid, valid_)]
-                        results[model.name]["MAE"][stock_name]['test'] = results[model.name]["MAE"][stock_name].get('test', []) + [mean_absolute_error(y_reg_test, test_)]
+                        y_valid_pred = fitted_model.predict(X_valid)
+                        y_test_pred = fitted_model.predict(X_test)
                     
-                    predictions_val[model.name][stock_name] = predictions_val[model.name].get(stock_name, []) + [valid_]
-                    predictions_test[model.name][stock_name] = predictions_test[model.name].get(stock_name, []) + [test_]
+                    model_pred_valid[stock_name] = y_valid_pred
+                    model_pred_test[stock_name] = y_test_pred
 
-        for model in models:
-            for metric in results[model.name]:
-                for stock in results[model.name][metric]:
-                    for split in results[model.name][metric][stock]:
-                        results[model.name][metric][stock][split] = np.mean(results[model.name][metric][stock][split])
-                results[model.name][metric] = pd.DataFrame.from_dict(results[model.name][metric])
+                model_pred_valid = pd.DataFrame().from_dict(model_pred_valid)
+                model_pred_valid.index = valid_index
+
+                model_pred_test = pd.DataFrame().from_dict(model_pred_test)
+                model_pred_test.index = test_index
+
+                forecasts_val[model.name] = forecasts_val[model.name] + [model_pred_valid]
+                forecasts_test[model.name] = forecasts_test[model.name] + [model_pred_test]
+
+                if model.type == "regression":
+                    # validate portfolio optimization parameters
+                    pc_valid = PortfolioConstructor(
+                        model = model,
+                        stock_names = stock_names,
+                        model_forecasts = model_pred_valid,
+                        precision_matrices = prec_mat,
+                        alphas = alphas,
+                        thetas = thetas,
+                        lambdas = lambdas
+                        )
+                    portfolios_valid, date_index_valid, stocks = pc_valid.get_portfolios()
+                    backtest_results_model = {}
+                    for i, lam in enumerate(lambdas):
+                        for j, alpha in enumerate(alphas):
+                            for k, theta in enumerate(thetas):
+                                weights_valid_model = portfolios_valid[i, j, k, :, :]
+                                weights_valid_model = pd.DataFrame(weights_valid_model, index = date_index_valid, columns = stocks)
+                                backtester_valid = BackTester(weights_valid_model, stock_returns, capital, risk_free, benchmark_returns)
+                                backtest_results = backtester_valid.get_backtest_statistics()
+                                backtest_results_model[(i, j, k)] = backtest_results
+                    backtest_results_model = pd.concat(backtest_results_model, axis = 1).T[["Yearly Sharpe", "Yearly Calmar", "Yearly Sortino"]].mean(axis = 1)
+                    best_params_idx = backtest_results_model.idxmax(axis = 0)
+                    best_lambda_idx, best_alpha_idx, best_theta_idx = best_params_idx
+                    best_lambda = lambdas[best_lambda_idx]
+                    best_alpha = alphas[best_alpha_idx]
+                    best_theta = thetas[best_theta_idx]
+                    best_params_df = pd.DataFrame(np.nan, index = date_index_valid, columns = ["lambda", "alpha", "theta"])
+                    best_params_df.loc[:, "lambda"] = best_lambda
+                    best_params_df.loc[:, "alpha"] = best_alpha
+                    best_params_df.loc[:, "theta"] = best_theta
+                    opt_param_dict[model.name] = opt_param_dict[model.name] + [best_params_df]
+
+                    portfolio_valid = pd.DataFrame(portfolios_valid[best_lambda_idx, best_alpha_idx, best_theta_idx, :, :], index = date_index_valid, columns = stocks)
+                    weights_valid[model.name] = weights_valid[model.name] + [portfolio_valid]
+
+                    pc_test = PortfolioConstructor(
+                        model = model,
+                        stock_names = stock_names,
+                        model_forecasts = model_pred_test, 
+                        precision_matrices = prec_mat, 
+                        alphas = [best_alpha],
+                        thetas = [best_theta],
+                        lambdas = [best_lambda]
+                        )
+                    portfolio_test, date_index_test, stocks = pc_test.get_portfolios()
+                    portfolio_test = portfolio_test[0][0][0]
+                    portfolio_test = pd.DataFrame(portfolio_test, index = date_index_test, columns = stocks)
+                    weights_test[model.name] = weights_test[model.name] + [portfolio_test]
+                
+                elif model.type == "classification":
+                    
+                    pc_valid = PortfolioConstructor(
+                        model = model,
+                        stock_names = stock_names,
+                        model_forecasts = model_pred_valid,
+                        precision_matrices = None,
+                        alphas = None,
+                        thetas = None,
+                        lambdas = None
+                        )
+                    portfolios_valid, date_index_valid, stocks_valid = pc_valid.get_portfolios()
+                    portfolio_valid = pd.DataFrame(portfolios_valid, index = date_index_valid, columns = stocks_valid)
+                    weights_valid[model.name] = weights_valid[model.name] + [portfolio_valid]
+
+                    pc_test = PortfolioConstructor(
+                        model = model,
+                        stock_names = stock_names,
+                        model_forecasts = model_pred_test,
+                        precision_matrices = None,
+                        alphas = None,
+                        thetas = None,
+                        lambdas = None
+                        )
+                    portfolio_test, date_index_test, stocks_test = pc_test.get_portfolios()
+                    portfolio_test = pd.DataFrame(portfolio_test, index = date_index_test, columns = stocks_test)
+                    weights_test[model.name] = weights_test[model.name] + [portfolio_test]
         
         for model in models:
-            for stock in predictions_test[model.name]:
-                predictions_test[model.name][stock] = pd.Series(np.concatenate(predictions_test[model.name][stock]), index = np.concatenate(test_index_full))
-                predictions_val[model.name][stock] = pd.Series(np.concatenate(predictions_val[model.name][stock]), index = np.concatenate(valid_index_full))
-            predictions_test[model.name] = pd.concat(predictions_test[model.name], axis = 1)
-            predictions_val[model.name] = pd.concat(predictions_val[model.name], axis = 1)
+            forecasts_val[model.name] = pd.concat(forecasts_val[model.name], axis = 0)
+            forecasts_test[model.name] = pd.concat(forecasts_test[model.name], axis = 0)
+            weights_valid[model.name] = pd.concat(weights_valid[model.name], axis = 0)
+            weights_test[model.name] = pd.concat(weights_test[model.name], axis = 0)
         
-        return results, predictions_val, predictions_test, np.concatenate(train_index_full), np.concatenate(valid_index_full), np.concatenate(test_index_full)
+        for model in models:
+            if model.type == "regression":
+                opt_param_dict[model.name] = pd.concat(opt_param_dict[model.name], axis = 0)
+        
+        valid_index_full = np.concatenate(valid_index_full, axis = 0)
+        test_index_full = np.concatenate(test_index_full, axis = 0)
+
+        return forecasts_val, forecasts_test, weights_valid, weights_test, opt_param_dict, valid_index_full, test_index_full
+        
+        

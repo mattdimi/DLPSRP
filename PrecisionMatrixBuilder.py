@@ -5,14 +5,14 @@ from sklearn.covariance import graphical_lasso
 
 class PrecisionMatrixBuilder:
 
-    def __init__(self, returns, window, alphas = [0.2, 0.4, 0.6, 0.8, 1, 1.5, 2, 5], thetas = [0.55, 0.65, 0.75]):
+    def __init__(self, returns, window, alphas, thetas):
         """Class to compute the precision matrix for a given set of returns and a given set of parameters
 
         Args:
-            returns (_type_): _description_
-            window (_type_): _description_
-            alphas (list, optional): _description_. Defaults to [0.2, 0.4, 0.6, 0.8, 1, 1.5, 2, 5].
-            thetas (list, optional): _description_. Defaults to [0.55, 0.65, 0.75].
+            returns (_type_): sample returns
+            window (_type_): size of the exponentially weighted moving window
+            alphas (list, optional): list of alphas used in GLASSO
+            thetas (list, optional): list of thetas used in EPO
         """
         self.returns = returns
         self.window = window
@@ -28,9 +28,7 @@ class PrecisionMatrixBuilder:
             alphas (list[float], optional): penalization parameters for graphical lasso.
 
         Returns:
-            dict: (dates, len(alphas) x 2 x returns.shape[1] x returns.shape[1] arrays)
-            list: list of alphas used in GLASSO
-            list: list of thetas used in EPO
+            dict: (dates, len(alphas) x len(thetas) x returns.shape[1] x returns.shape[1] arrays)
         """
         cov = self.returns.ewm(min_periods = 1, alpha = 1/self.window).cov()
         dates = cov.index.levels[0]

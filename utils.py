@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import yfinance as yf
 from sklearn.model_selection import TimeSeriesSplit
 from scipy.ndimage.interpolation import shift
+import json
 from BackTester import BackTester
 
 def drawdown(return_series: pd.Series):
@@ -12,7 +13,7 @@ def drawdown(return_series: pd.Series):
     """
     wealth_index = return_series.cumsum()
     previous_peaks = wealth_index.cummax()
-    drawdowns = (wealth_index - previous_peaks)/previous_peaks
+    drawdowns = (previous_peaks - wealth_index)/previous_peaks
     return drawdowns.abs().max()
 
 def time_series_cross_validation(dataset, time_index, valid_size = 100, test_size = 30, n_splits = 50):
@@ -21,7 +22,7 @@ def time_series_cross_validation(dataset, time_index, valid_size = 100, test_siz
         train, test = dataset[train_index, :, :], dataset[test_index, :, :]
         train, valid = train[:-valid_size, :, :], train[-valid_size:, :, :]
 
-        time_index_train = time_index[train_index]
+        time_index_train = time_index[train_index[:-valid_size]]
         time_index_valid = time_index[train_index[-valid_size:]]
         time_index_test = time_index[test_index]
         
@@ -63,4 +64,11 @@ def run_backtests(constructed_portfolios, dataloader, time_index, models, lambda
     backtest_performances.columns.names = ["Model", "Lambda", "Alpha", "Theta"]
     
     return backtest_results, backtest_performances
+
+def load_config():
+
+    with open("config.json") as f:
+        config = json.load(f)
+    return config
+
 

@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 
 class BackTester:
 
-    def __init__(self, weights, returns, capital, risk_free_asset):
+    def __init__(self, weights, returns, capital, risk_free_asset, benchmark = None, name = None):
         """Class to run backtests on portfolios
-        
+
         Args:
             weights (pd.DataFrame): _description_
             returns (pd.DataFrame): _description_
@@ -19,6 +19,9 @@ class BackTester:
         self.returns, self.weights = self.returns.align(self.weights, join = 'inner')
         self.capital = capital
         self.risk_free_asset = risk_free_asset
+        self.benchmark = benchmark
+        self.time_index = self.weights.index
+        self.name = name if name is not None else "Strategy"
 
     def run_backtest(self):
         turnover = self.weights.diff().abs().dropna().sum(axis = 1)
@@ -33,10 +36,17 @@ class BackTester:
         weighted_returns = weighted_returns - turnover*0.0033*2 - risk_free_asset # 0.33% transaction cost
         cum_returns = self.capital* (1 + weighted_returns.cumsum())
         return weighted_returns, cum_returns
-    
-    def get_backtest_statistics(self, plot_performance = False):
 
-        weighted_rets, cum_rets = self.run_backtest()
+    def get_strategy_cumulative_returns(self):
+        _, cum_returns = self.run_backtest()
+        benchmark = self.benchmark
+        benchmark = benchmark.loc[cum_returns.index]
+        benchmark_cum_returns = self.capital*(1+benchmark.cumsum())
+        return pd.concat({self.name:cum_returns, "CAC 40":benchmark_cum_returns}, axis = 1)
+
+    def get_backtest_statistics(self):
+
+        weighted_rets, _ = self.run_backtest()
 
         average_turnover = self.weights.diff().abs().dropna().sum(axis = 1).mean()
 
@@ -50,7 +60,7 @@ class BackTester:
         calmar = average_rets/dd
 
         backtest_statistics = {
-            "Yearly returns":average_rets,
+            "Yearly excess returns":average_rets,
             "Yearly standard deviation":std,
             "Max DD":dd,
             "Yearly Sharpe":sharpe,
@@ -59,10 +69,9 @@ class BackTester:
             "Daily Turnover": average_turnover
             }
 
-        if plot_performance:
-            cum_rets.plot()
-        
         return pd.Series(backtest_statistics)
+            
+    
 
         
 
