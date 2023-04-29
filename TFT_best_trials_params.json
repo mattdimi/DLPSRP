@@ -1,0 +1,306 @@
+{
+    "ACA.PA": {
+        "gradient_clip_val": 0.03984370977229288,
+        "hidden_size": 63,
+        "dropout": 0.1572347440251219,
+        "hidden_continuous_size": 28,
+        "attention_head_size": 4,
+        "learning_rate": 0.023171898464739004
+    },
+    "AI.PA": {
+        "gradient_clip_val": 0.28922487845927536,
+        "hidden_size": 39,
+        "dropout": 0.15579372271550707,
+        "hidden_continuous_size": 13,
+        "attention_head_size": 4,
+        "learning_rate": 0.09186792545330817
+    },
+    "AIR.PA": {
+        "gradient_clip_val": 0.1484088626459043,
+        "hidden_size": 72,
+        "dropout": 0.1537649426572419,
+        "hidden_continuous_size": 32,
+        "attention_head_size": 4,
+        "learning_rate": 0.013357219883734513
+    },
+    "ALO.PA": {
+        "gradient_clip_val": 0.06637219790011249,
+        "hidden_size": 30,
+        "dropout": 0.184222898970671,
+        "hidden_continuous_size": 12,
+        "attention_head_size": 3,
+        "learning_rate": 0.02027649358259264
+    },
+    "BN.PA": {
+        "gradient_clip_val": 0.03664430989315715,
+        "hidden_size": 14,
+        "dropout": 0.24006232067993608,
+        "hidden_continuous_size": 10,
+        "attention_head_size": 4,
+        "learning_rate": 0.05321454926505386
+    },
+    "BNP.PA": {
+        "gradient_clip_val": 0.07865642593383523,
+        "hidden_size": 76,
+        "dropout": 0.10147944136444687,
+        "hidden_continuous_size": 22,
+        "attention_head_size": 3,
+        "learning_rate": 0.01392705093773991
+    },
+    "CA.PA": {
+        "gradient_clip_val": 0.09377785397240407,
+        "hidden_size": 16,
+        "dropout": 0.22877558500025355,
+        "hidden_continuous_size": 13,
+        "attention_head_size": 3,
+        "learning_rate": 0.010216369014101565
+    },
+    "CAP.PA": {
+        "gradient_clip_val": 0.8751283907457965,
+        "hidden_size": 37,
+        "dropout": 0.29600775380404143,
+        "hidden_continuous_size": 16,
+        "attention_head_size": 1,
+        "learning_rate": 0.0875183768589799
+    },
+    "CS.PA": {
+        "gradient_clip_val": 0.8491699203145842,
+        "hidden_size": 52,
+        "dropout": 0.1238147671669599,
+        "hidden_continuous_size": 20,
+        "attention_head_size": 4,
+        "learning_rate": 0.08457751364112483
+    },
+    "DG.PA": {
+        "gradient_clip_val": 0.3686951202541995,
+        "hidden_size": 42,
+        "dropout": 0.17210317603727265,
+        "hidden_continuous_size": 39,
+        "attention_head_size": 2,
+        "learning_rate": 0.09941289849225404
+    },
+    "DSY.PA": {
+        "gradient_clip_val": 0.024913212769825287,
+        "hidden_size": 104,
+        "dropout": 0.286275639818858,
+        "hidden_continuous_size": 74,
+        "attention_head_size": 3,
+        "learning_rate": 0.017013244844929318
+    },
+    "EL.PA": {
+        "gradient_clip_val": 0.02862153940512441,
+        "hidden_size": 13,
+        "dropout": 0.19922504234714417,
+        "hidden_continuous_size": 11,
+        "attention_head_size": 2,
+        "learning_rate": 0.045403309042506654
+    },
+    "EN.PA": {
+        "gradient_clip_val": 0.038221171797397445,
+        "hidden_size": 81,
+        "dropout": 0.28956032719419916,
+        "hidden_continuous_size": 29,
+        "attention_head_size": 3,
+        "learning_rate": 0.08064178997755259
+    },
+    "ENGI.PA": {
+        "gradient_clip_val": 0.018285421530978837,
+        "hidden_size": 52,
+        "dropout": 0.2834855376184067,
+        "hidden_continuous_size": 29,
+        "attention_head_size": 1,
+        "learning_rate": 0.034975074544846066
+    },
+    "ERF.PA": {
+        "gradient_clip_val": 0.34062803477548653,
+        "hidden_size": 9,
+        "dropout": 0.26886462103735126,
+        "hidden_continuous_size": 9,
+        "attention_head_size": 2,
+        "learning_rate": 0.028198157467663243
+    },
+    "GLE.PA": {
+        "gradient_clip_val": 0.4936803880079853,
+        "hidden_size": 85,
+        "dropout": 0.2523142000524218,
+        "hidden_continuous_size": 22,
+        "attention_head_size": 4,
+        "learning_rate": 0.03560823183917167
+    },
+    "HO.PA": {
+        "gradient_clip_val": 0.02528202130288731,
+        "hidden_size": 108,
+        "dropout": 0.13691537212938035,
+        "hidden_continuous_size": 9,
+        "attention_head_size": 2,
+        "learning_rate": 0.008820012071111856
+    },
+    "KER.PA": {
+        "gradient_clip_val": 0.032014631810490836,
+        "hidden_size": 107,
+        "dropout": 0.2162838515158669,
+        "hidden_continuous_size": 8,
+        "attention_head_size": 1,
+        "learning_rate": 0.005778401672877112
+    },
+    "LR.PA": {
+        "gradient_clip_val": 0.26149438553934795,
+        "hidden_size": 37,
+        "dropout": 0.12314007087449592,
+        "hidden_continuous_size": 27,
+        "attention_head_size": 2,
+        "learning_rate": 0.01746520513811373
+    },
+    "MC.PA": {
+        "gradient_clip_val": 0.0201226004705712,
+        "hidden_size": 19,
+        "dropout": 0.19763170428629168,
+        "hidden_continuous_size": 11,
+        "attention_head_size": 2,
+        "learning_rate": 0.012445275891071706
+    },
+    "ML.PA": {
+        "gradient_clip_val": 0.0593569718277943,
+        "hidden_size": 59,
+        "dropout": 0.21792604472217053,
+        "hidden_continuous_size": 25,
+        "attention_head_size": 4,
+        "learning_rate": 0.020856687534296696
+    },
+    "MT.AS": {
+        "gradient_clip_val": 0.010675402003250673,
+        "hidden_size": 60,
+        "dropout": 0.20843853334421103,
+        "hidden_continuous_size": 57,
+        "attention_head_size": 4,
+        "learning_rate": 0.004158919026938853
+    },
+    "OR.PA": {
+        "gradient_clip_val": 0.060224879378169276,
+        "hidden_size": 15,
+        "dropout": 0.23769599148752604,
+        "hidden_continuous_size": 11,
+        "attention_head_size": 3,
+        "learning_rate": 0.009395167878855104
+    },
+    "ORA.PA": {
+        "gradient_clip_val": 0.07150068305840901,
+        "hidden_size": 9,
+        "dropout": 0.15174339290626127,
+        "hidden_continuous_size": 9,
+        "attention_head_size": 1,
+        "learning_rate": 0.0029761547231400764
+    },
+    "PUB.PA": {
+        "gradient_clip_val": 0.20033611037227259,
+        "hidden_size": 106,
+        "dropout": 0.2885120592620015,
+        "hidden_continuous_size": 21,
+        "attention_head_size": 2,
+        "learning_rate": 0.014838423642893048
+    },
+    "RI.PA": {
+        "gradient_clip_val": 0.023676956462709158,
+        "hidden_size": 23,
+        "dropout": 0.1151534577372702,
+        "hidden_continuous_size": 13,
+        "attention_head_size": 2,
+        "learning_rate": 0.017940918003618203
+    },
+    "RMS.PA": {
+        "gradient_clip_val": 0.12490582829034931,
+        "hidden_size": 28,
+        "dropout": 0.2014278110019216,
+        "hidden_continuous_size": 13,
+        "attention_head_size": 3,
+        "learning_rate": 0.017300642582510316
+    },
+    "RNO.PA": {
+        "gradient_clip_val": 0.016583629690091743,
+        "hidden_size": 77,
+        "dropout": 0.12675630872469695,
+        "hidden_continuous_size": 30,
+        "attention_head_size": 4,
+        "learning_rate": 0.004829755697095596
+    },
+    "SAF.PA": {
+        "gradient_clip_val": 0.091537767793775,
+        "hidden_size": 18,
+        "dropout": 0.17883015902984192,
+        "hidden_continuous_size": 10,
+        "attention_head_size": 2,
+        "learning_rate": 0.04420914935548764
+    },
+    "SAN.PA": {
+        "gradient_clip_val": 0.017029499744457575,
+        "hidden_size": 91,
+        "dropout": 0.11097070804572524,
+        "hidden_continuous_size": 77,
+        "attention_head_size": 4,
+        "learning_rate": 0.033913158617275056
+    },
+    "SGO.PA": {
+        "gradient_clip_val": 0.12219158750690293,
+        "hidden_size": 32,
+        "dropout": 0.1908639892245546,
+        "hidden_continuous_size": 27,
+        "attention_head_size": 2,
+        "learning_rate": 0.01159354873050097
+    },
+    "STMPA.PA": {
+        "gradient_clip_val": 0.17632453895715064,
+        "hidden_size": 61,
+        "dropout": 0.12902750275933203,
+        "hidden_continuous_size": 22,
+        "attention_head_size": 3,
+        "learning_rate": 0.020693855980959897
+    },
+    "SU.PA": {
+        "gradient_clip_val": 0.03027978096094013,
+        "hidden_size": 63,
+        "dropout": 0.2465040620575332,
+        "hidden_continuous_size": 17,
+        "attention_head_size": 4,
+        "learning_rate": 0.09522517012055302
+    },
+    "TEP.PA": {
+        "gradient_clip_val": 0.10106242514781774,
+        "hidden_size": 80,
+        "dropout": 0.1440537178891931,
+        "hidden_continuous_size": 11,
+        "attention_head_size": 1,
+        "learning_rate": 0.005769205347775382
+    },
+    "TTE.PA": {
+        "gradient_clip_val": 0.05668874041580871,
+        "hidden_size": 59,
+        "dropout": 0.1465801538148802,
+        "hidden_continuous_size": 13,
+        "attention_head_size": 1,
+        "learning_rate": 0.024655059331480007
+    },
+    "URW.AS": {
+        "gradient_clip_val": 0.022480898287944907,
+        "hidden_size": 45,
+        "dropout": 0.22269301321958077,
+        "hidden_continuous_size": 21,
+        "attention_head_size": 3,
+        "learning_rate": 0.018735209336172266
+    },
+    "VIE.PA": {
+        "gradient_clip_val": 0.8658159949313716,
+        "hidden_size": 26,
+        "dropout": 0.25672781035385905,
+        "hidden_continuous_size": 9,
+        "attention_head_size": 4,
+        "learning_rate": 0.055048780961539236
+    },
+    "VIV.PA": {
+        "gradient_clip_val": 0.1532330914689374,
+        "hidden_size": 17,
+        "dropout": 0.198633043776144,
+        "hidden_continuous_size": 11,
+        "attention_head_size": 1,
+        "learning_rate": 0.04194051660623612
+    }
+}
