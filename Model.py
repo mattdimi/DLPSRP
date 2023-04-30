@@ -1,12 +1,16 @@
 class Model:
 
-    def __init__(self, name, type, model_class):
+    def __init__(self, 
+                name,
+                type,
+                model_class
+                ):
         """Utility class to define a model
 
         Args:
             name (str): Model name
             type (str): `classification` | `regression`
-            model_class (_type_): model class. Needs to support `fit` and `predict` methods.
+            model_class (_type_): Model instance. Needs to support `fit` and `predict` methods.
         """
         self.name = name
 

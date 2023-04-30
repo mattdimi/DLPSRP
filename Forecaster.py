@@ -6,7 +6,9 @@ from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from BackTester import BackTester
 from PortfolioConstructor import PortfolioConstructor
-
+from torch.utils.data import DataLoader
+from MyDataset import MyDataset
+import torch
 
 class Forecaster:
 
@@ -71,7 +73,7 @@ class Forecaster:
                 for stock in range(n_stocks):
 
                     stock_name = stock_names[stock]
-                    
+
                     stock_train = train[:, stock, :]
                     stock_valid = valid[:, stock, :]
                     stock_test = test[:, stock, :]
@@ -98,30 +100,27 @@ class Forecaster:
                     scaler_y.fit(y_reg_train.reshape(-1, 1))
                     y_reg_train = scaler_y.transform(y_reg_train.reshape(-1, 1)).reshape(-1)
                     y_reg_valid = scaler_y.transform(y_reg_valid.reshape(-1, 1)).reshape(-1)
-                    y_reg_test = scaler_y.transform(y_reg_test.reshape(-1, 1)).reshape(-1)                    
+                    y_reg_test = scaler_y.transform(y_reg_test.reshape(-1, 1)).reshape(-1)
 
-                    if model.type == "classification":
-                        
-                        fitted_model = cls.fit(X_train, y_classification_train)
+                    dataset_train = MyDataset(X_train, y_reg_train if model.type == "regression" else y_classification_train)
+                    dataset_valid = MyDataset(X_valid, y_reg_valid if model.type == "regression" else y_classification_valid)
+                    dataset_test = MyDataset(X_test, y_reg_test if model.type == "regression" else y_classification_test)
 
-                        y_valid_pred = fitted_model.predict(X_valid)
-                        y_test_pred = fitted_model.predict(X_test)
-
-                    if model.type == "regression":
-                        
-                        fitted_model = cls.fit(X_train, y_reg_train)
-
-                        y_valid_pred = fitted_model.predict(X_valid)
-                        y_test_pred = fitted_model.predict(X_test)
+                    train_dataloader = DataLoader(dataset=dataset_train, batch_size=64, shuffle=False)
+                    valid_dataloader = DataLoader(dataset=dataset_valid, batch_size=64, shuffle=False)
+                    test_dataloader = DataLoader(dataset=dataset_test, batch_size=64, shuffle=False)
                     
-                    model_pred_valid[stock_name] = y_valid_pred
-                    model_pred_test[stock_name] = y_test_pred
+                    fitted_model = cls.fit(train_dataloader, valid_dataloader) if isinstance(cls, torch.nn.Module) else cls.fit(X_train, y_reg_train if model.type == "regression" else y_classification_train)
 
-                model_pred_valid = pd.DataFrame().from_dict(model_pred_valid)
-                model_pred_valid.index = valid_index
+                    y_valid_pred = fitted_model.predict(valid_dataloader) if isinstance(cls, torch.nn.Module) else fitted_model.predict(X_valid)
+                    y_test_pred = fitted_model.predict(test_dataloader) if isinstance(cls, torch.nn.Module) else fitted_model.predict(X_test)
+                    
+                    model_pred_valid[stock_name] = pd.Series(y_valid_pred, index = valid_index)
+                    model_pred_test[stock_name] = pd.Series(y_test_pred, index = test_index)
 
-                model_pred_test = pd.DataFrame().from_dict(model_pred_test)
-                model_pred_test.index = test_index
+                model_pred_valid = pd.concat(model_pred_valid, axis = 1)
+
+                model_pred_test = pd.concat(model_pred_test, axis = 1)
 
                 forecasts_val[model.name] = forecasts_val[model.name] + [model_pred_valid]
                 forecasts_test[model.name] = forecasts_test[model.name] + [model_pred_test]
@@ -218,5 +217,7 @@ class Forecaster:
         test_index_full = np.concatenate(test_index_full, axis = 0)
 
         return forecasts_val, forecasts_test, weights_valid, weights_test, opt_param_dict, valid_index_full, test_index_full
+
+
         
         

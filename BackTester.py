@@ -27,7 +27,7 @@ class BackTester:
         turnover = self.weights.diff().abs().dropna().sum(axis = 1)
         weighted_returns = (self.returns*self.weights).dropna()
         weighted_returns = weighted_returns.sum(axis = 1)
-
+        
         index_inter = weighted_returns.index.intersection(turnover.index).intersection(self.risk_free_asset.index)
         weighted_returns = weighted_returns.loc[index_inter]
         turnover = turnover.loc[index_inter]
@@ -45,7 +45,7 @@ class BackTester:
         return pd.concat({self.name:cum_returns, "CAC 40":benchmark_cum_returns}, axis = 1)
 
     def get_backtest_statistics(self):
-
+        
         weighted_rets, _ = self.run_backtest()
 
         average_turnover = self.weights.diff().abs().dropna().sum(axis = 1).mean()

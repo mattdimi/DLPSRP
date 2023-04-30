@@ -66,9 +66,12 @@ def run_backtests(constructed_portfolios, dataloader, time_index, models, lambda
     return backtest_results, backtest_performances
 
 def load_config():
-
     with open("config.json") as f:
         config = json.load(f)
     return config
 
+def load_opt_params_tft():
+    with open("opt_params_tft.json") as f:
+        opt_params_tft = json.load(f)
+    return opt_params_tft
 

@@ -57,7 +57,7 @@ class PortfolioConstructor:
         elif model.type == "classification":
             weights = np.zeros(shape = (n_dates, n_assets)) # dates x assets
             for t, date in enumerate(forecasts.index):
-                forecasts_date = forecasts.loc[date]
+                forecasts_date = 2*forecasts.loc[date] - 1 # 0/1 classification -> -1/1
                 n_pos = np.sum(forecasts_date > 0)
                 n_neg = np.sum(forecasts_date < 0)
                 weights_t = pd.Series(0., index = stock_names)
