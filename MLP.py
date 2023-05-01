@@ -1,62 +1,46 @@
-# Initial linear and log regression for baseline comparison
+import numpy as np
+import torch
 
-import numpy
-import torch 
-
-from MyDataLoader import *
-import Model
-import pandas as pd
-import datetime as dt
-import warnings
-warnings.filterwarnings("ignore")
-
-class MLP(torch.nn.Module): 
-    def __init__(self, input_dim, output_dim, hidden_dim, num_layers):
+class MLP(torch.nn.Module):
+    def __init__(self, input_dim, hidden_dim, num_layers, model_type = "regression"):
         super(MLP, self).__init__()
-        # Note: add error warnings for invalid dimensions 
         self.input_dim = input_dim
-        self.output_dim = output_dim
-        self.layers = torch.nn.Sequential(torch.nn.Linear(input_dim, hidden_dim), torch.nn.ReLU())
+        output_dim = 1 if model_type == "regression" else 2
+        self.model_type = model_type
+        self.loss = torch.nn.MSELoss() if model_type == "regression" else torch.nn.CrossEntropyLoss()
+        self.layers = torch.nn.Sequential(
+            torch.nn.Linear(input_dim, hidden_dim, dtype=torch.float64),
+            torch.nn.ReLU()
+            )
         for i in range(num_layers-3):
-            self.layers.append(torch.nn.Linear(hidden_dim, hidden_dim))
+            self.layers.append(torch.nn.Linear(hidden_dim, hidden_dim, dtype=torch.float64))
             self.layers.append(torch.nn.ReLU())
-        self.layers.append(torch.nn.Linear(hidden_dim, output_dim))
-        self.loss_fn = torch.nn.CrossEntropyLoss()
+        self.layers.append(torch.nn.Linear(hidden_dim, output_dim, dtype=torch.float64))
         self.optimizer = torch.optim.Adam(self.parameters())
 
-
     def forward(self, x):
-        # from class example
-        return self.layers(x.reshape(-1, self.input_dim))
+        return self.layers(x)
     
-    def fit(self, trainset, validset, num_epochs = 10, max_patience = 3, min_delta = 0.001):
-        # train loader?
-        # trainloader = DataLoader(trainset)
+    def fit(self, train_dataloader, valid_dataloader, num_epochs = 10, max_patience = 3, min_delta = 0.001):
         self.train()
         prev_val_loss = np.inf
         patience = 0
         for i in range(num_epochs):
             curr_val_loss = 0
-            for batch in trainset: 
-                data, label = batch
-                # print(data.dtype)
-                # data = data.to(torch.long)
-                prediction = self.layers(data.to(torch.float32))
-                # print(label.dtype)
-                # print(prediction.dtype)
-                print(prediction.size())
-                print(label.size())
-                loss = self.loss_fn(prediction.flatten(), label)
-
+            for batch in train_dataloader:
+                x, y = batch
+                y = y if self.model_type == "regression" else y.to(torch.long) 
+                prediction = self(x)
+                loss = self.loss(prediction, y)
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
-            for batch in validset:
+            for batch in valid_dataloader:
                 x, y = batch
-                y_hat = self.layers(x.to(torch.float32))
-                # x = x.to(torch.long)
-                val_loss = self.loss_fn(y_hat.flatten(), y)
+                y = y if self.model_type == "regression" else y.to(torch.long)
+                y_hat = self(x)
+                val_loss = self.loss(y_hat, y)
                 curr_val_loss += val_loss
             if abs(curr_val_loss - prev_val_loss) < min_delta:
                 patience+=1
@@ -66,15 +50,11 @@ class MLP(torch.nn.Module):
                 break
         return self
 
-
     def predict(self, dataloader): # testing/projecting model 
         with torch.no_grad():
             predictions = []
             for batch in dataloader:
                 x, _ = batch
-                y_hat = self.layers(x.to(torch.float32))
+                y_hat = self(x) if self.model_type == "regression" else self(x).argmax(dim=1)
                 predictions.append(y_hat)
-            print(torch.cat(predictions).numpy())
             return torch.cat(predictions).numpy().flatten() # (n,) np.array
-
-        # return self.forward(self, x)
