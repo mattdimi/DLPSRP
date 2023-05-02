@@ -42,6 +42,7 @@ class Base(torch.nn.Module):
                 optimizer.step()
             for batch in validation_dataloader:
                 x, y = batch
+                y = y.long() if model_type == "classification" else y
                 y_hat = self(x)
                 val_loss = loss_fn(y_hat, y)
                 curr_val_loss+=val_loss
@@ -67,15 +68,22 @@ class Base(torch.nn.Module):
             for batch in dataloader:
                 x, _ = batch
                 y_hat = self(x)
+                y_hat = y_hat.argmax(dim = 1) if self.model_type == "classification" else y_hat
                 predictions.append(y_hat)
             return torch.cat(predictions).numpy().flatten() # (n,) np.array
     
 class LinearRegression(Base):
     def __init__(self, input_dim, lr = 1e-3):
-        super(LinearRegression, self).__init__()
+        """Linear regression model
+
+        Args:
+            input_dim (_type_): input dimension
+            lr (_type_, optional): learning rate of the optimizer. Defaults to 1e-3.
+        """
+        super().__init__()
         self.linear = torch.nn.Linear(input_dim, 1, dtype = torch.float64)
         self.optimizer = torch.optim.Adam(self.parameters(), lr = lr)
-
+    
     def forward(self, x):
         return self.linear(x)
     
@@ -84,7 +92,7 @@ class LinearRegression(Base):
 
 class MLP(Base):
     def __init__(self, input_dim, hidden_dim, num_layers, model_type):
-        super(MLP, self).__init__()
+        super().__init__()
         self.input_dim = input_dim
         output_dim = 1 if model_type == "regression" else 2
         self.model_type = model_type
@@ -96,10 +104,41 @@ class MLP(Base):
             self.layers.append(torch.nn.Linear(hidden_dim, hidden_dim, dtype=torch.float64))
             self.layers.append(torch.nn.ReLU())
         self.layers.append(torch.nn.Linear(hidden_dim, output_dim, dtype=torch.float64))
+        self.final_activation = torch.nn.Sigmoid() if model_type == "classification" else torch.nn.Identity()
         self.optimizer = torch.optim.Adam(self.parameters())
 
     def forward(self, x):
-        return self.layers(x)
+        return self.final_activation(self.layers(x))
+
+    def fit(self, train_dataloader, valid_dataloader):
+        return super().fit(train_dataloader, valid_dataloader, self.optimizer, self.model_type)
+
+class LSTM(Base):
+    def __init__(self, input_size, hidden_size, num_layers, model_type):
+        """Long-Short Term memory neural network
+
+        Args:
+            input_size (_type_): _description_
+            hidden_size (_type_): _description_
+            num_layers (_type_): _description_
+            model_type (_type_): _description_
+        """
+        super().__init__()
+        self.in_dimensions = input_size
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.model_type = model_type
+        self.output_dim = 1 if self.model_type == "regression" else 2
+        self.lstm = torch.nn.LSTM(input_size, hidden_size, num_layers, batch_first = True, dtype = torch.float64)
+        self.linear = torch.nn.Linear(hidden_size, self.output_dim, dtype = torch.float64)
+        self.final_activation = torch.nn.Sigmoid() if model_type == "classification" else torch.nn.Identity()
+        self.optimizer = torch.optim.Adam(self.parameters())
+
+    def forward(self, x):
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size, dtype = torch.float64)
+        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size, dtype = torch.float64)
+        output, _ = self.lstm(x, (h0, c0))
+        return self.final_activation(self.linear(output[:,-1,:])) # (batch_size, hidden_size)
 
     def fit(self, train_dataloader, valid_dataloader):
         return super().fit(train_dataloader, valid_dataloader, self.optimizer, self.model_type)
@@ -124,22 +163,6 @@ class CNN(Base):
     def fit(self, train_dataloader, valid_dataloader):
         return super().fit(train_dataloader, valid_dataloader, self.optimizer, self.model_type)
 
-class LTSM(Base):
-    def __init__(self, in_dimensions, hidden_dimensions, num_layers):
-        super().__init__()
-        #initialize parameters and model
-        self.in_dimensions = in_dimensions
-        self.hidden_dimensions = hidden_dimensions
-        self.num_layers = num_layers
-        self.model = torch.nn.LSTM(in_dimensions, hidden_dimensions, num_layers, bias=True, device=None, dtype=None)
-        #input = torch.rand(time_step, batch, in_dimensions)
-        #c_0 = np.tanh(x*W_xc+H*W_hc+b_c)
-        self.loss_fn = torch.nn.CrossEntropyLoss()
-        self.optimizer = torch.optim.Adam(self.parameters())
-
-    def forward(self, input):
-        output, hn, cn = self.model(input)
-        return output, hn, cn
 
 class GRU(Base):
     def __init__(self, in_dimensions, hidden_dimensions, num_layers, model_type):
