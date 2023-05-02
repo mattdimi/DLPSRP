@@ -3,7 +3,8 @@ class Model:
     def __init__(self, 
                 name,
                 type,
-                model_class
+                model_class,
+                is_rnn = False,
                 ):
         """Utility class to define a model
 
@@ -19,3 +20,5 @@ class Model:
         
         assert(all([hasattr(model_class, "fit"), hasattr(model_class, "predict")]))
         self.cls = model_class # to test for hyperparameters, we can use a list of Model instances with different hyperparameters
+
+        self.is_rnn = is_rnn

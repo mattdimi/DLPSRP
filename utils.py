@@ -75,3 +75,25 @@ def load_opt_params_tft():
         opt_params_tft = json.load(f)
     return opt_params_tft
 
+def load_data_for_rnn(X, y, len_train, len_valid, len_test, lookback_window):
+    """Method to load data into a np.array which is suitable for recurrent neural networks
+
+    Args:
+        X (np.array): features of shape (number of samples, number of features)
+        y (np.array): target of shape (number of samples, )
+        lookback_window (int): number of previous days to look back
+    """
+    X_temp = []
+    y_temp = []
+    for i in range(lookback_window-1, X.shape[0]):
+        X_temp.append(X[i-lookback_window+1:i+1,:]) # features already shifted by 1
+        y_temp.append(y[i])
+    X_train = np.array(X_temp[:len_train-lookback_window+1])
+    y_train = np.array(y_temp[:len_train-lookback_window+1])
+    X_valid = np.array(X_temp[len_train-lookback_window+1:len_train+len_valid-lookback_window+1])
+    y_valid = np.array(y_temp[len_train-lookback_window+1:len_train+len_valid-lookback_window+1])
+    X_test = np.array(X_temp[len_train+len_valid-lookback_window+1:])
+    y_test = np.array(y_temp[len_train+len_valid-lookback_window+1:])
+    return X_train, y_train, X_valid, y_valid, X_test, y_test
+
+

@@ -102,9 +102,17 @@ class Forecaster:
                     y_reg_valid = scaler_y.transform(y_reg_valid.reshape(-1, 1)).reshape(-1)
                     y_reg_test = scaler_y.transform(y_reg_test.reshape(-1, 1)).reshape(-1)
 
-                    dataset_train = MyDataset(X_train, y_reg_train if model.type == "regression" else y_classification_train)
-                    dataset_valid = MyDataset(X_valid, y_reg_valid if model.type == "regression" else y_classification_valid)
-                    dataset_test = MyDataset(X_test, y_reg_test if model.type == "regression" else y_classification_test)
+                    y_train, y_valid, y_test = y_reg_train, y_reg_valid, y_reg_test if model.type == "regression" else y_classification_train, y_classification_valid, y_classification_test
+
+                    X_full = np.vstack([X_train, X_valid, X_test])
+                    y_full = np.vstack([y_train, y_valid, y_test])
+                    
+                    if model.is_rnn:
+                        X_train, y_train, X_valid, y_valid, X_test, y_test = utils.load_data_for_rnn(X_full, y_full, len(train_index), len(valid_index), len(test_index), lookback_window=60)
+                    
+                    dataset_train = MyDataset(X_train, y_train)
+                    dataset_valid = MyDataset(X_valid, y_valid)
+                    dataset_test = MyDataset(X_test, y_test)
 
                     train_dataloader = DataLoader(dataset=dataset_train, batch_size=64, shuffle=False)
                     valid_dataloader = DataLoader(dataset=dataset_valid, batch_size=64, shuffle=False)
