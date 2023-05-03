@@ -13,8 +13,8 @@ class Base(torch.nn.Module):
         """Function to train the model
 
         Args:
-            train_dataloader (torch.utils.data.DataLoader): _description_
-            validation_dataloader (torch.utils.data.DataLoader): _description_
+            train_dataloader (torch.utils.data.DataLoader): DataLoader for the training set
+            validation_dataloader (torch.utils.data.DataLoader): DataLoader for the validation set
             optimizer (torch.optim.Optimizer): Optimizer used
             loss (torch.nn.MSELoss): Loss function used
             num_epochs (int, optional): Number of epochs to train the model. Defaults to 10.
