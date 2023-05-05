@@ -79,15 +79,15 @@ class Forecaster:
                     stock_test = test[:, stock, :]
 
                     y_reg_train = stock_train[:, 0]
-                    y_classification_train = stock_train[:, 1]
+                    y_classification_train = stock_train[:, 1].reshape(-1,1)
                     X_train = stock_train[:, 2:]
                     
                     y_reg_valid = stock_valid[:, 0]
-                    y_classification_valid = stock_valid[:, 1]
+                    y_classification_valid = stock_valid[:, 1].reshape(-1,1)
                     X_valid = stock_valid[:, 2:]
 
                     y_reg_test = stock_test[:, 0]
-                    y_classification_test = stock_test[:, 1]
+                    y_classification_test = stock_test[:, 1].reshape(-1,1)
                     X_test = stock_test[:, 2:]
 
                     scaler_X = StandardScaler()
@@ -98,17 +98,29 @@ class Forecaster:
                     
                     scaler_y = StandardScaler()
                     scaler_y.fit(y_reg_train.reshape(-1, 1))
-                    y_reg_train = scaler_y.transform(y_reg_train.reshape(-1, 1)).reshape(-1)
-                    y_reg_valid = scaler_y.transform(y_reg_valid.reshape(-1, 1)).reshape(-1)
-                    y_reg_test = scaler_y.transform(y_reg_test.reshape(-1, 1)).reshape(-1)
+                    y_reg_train = scaler_y.transform(y_reg_train.reshape(-1, 1)).reshape(-1, 1)  
+                    y_reg_valid = scaler_y.transform(y_reg_valid.reshape(-1, 1)).reshape(-1, 1)
+                    y_reg_test = scaler_y.transform(y_reg_test.reshape(-1, 1)).reshape(-1, 1)
 
-                    y_train, y_valid, y_test = (y_reg_train, y_reg_valid, y_reg_test) if model.type == "regression" else (y_classification_train, y_classification_valid, y_classification_test)
+                    if model.type == "regression": 
+                        y_train, y_valid, y_test = y_reg_train, y_reg_valid, y_reg_test 
+                    else: 
+                        y_train, y_valid, y_test = y_classification_train, y_classification_valid, y_classification_test
 
+                    #print(np.shape(y_train))
+                    #print(np.shape(y_valid))
+                    #print(np.shape(y_test))
+            
+                    
                     if model.is_rnn:
                         X_full = np.vstack([X_train, X_valid, X_test])
-                        y_full = np.hstack([y_train, y_valid, y_test])
+                        y_full = np.vstack([y_train, y_valid, y_test])
                         X_train, y_train, X_valid, y_valid, X_test, y_test = utils.load_data_for_rnn(X_full, y_full, len(train_index), len(valid_index), len(test_index), lookback_window=60)
-                    
+                    else:
+                        X_full = np.vstack([X_train, X_valid, X_test])
+                        y_full = np.vstack([y_train, y_valid, y_test])
+
+
                     dataset_train = MyDataset(X_train, y_train)
                     dataset_valid = MyDataset(X_valid, y_valid)
                     dataset_test = MyDataset(X_test, y_test)
@@ -121,7 +133,7 @@ class Forecaster:
 
                     y_valid_pred = fitted_model.predict(valid_dataloader) if isinstance(cls, torch.nn.Module) else fitted_model.predict(X_valid)
                     y_test_pred = fitted_model.predict(test_dataloader) if isinstance(cls, torch.nn.Module) else fitted_model.predict(X_test)
-                    
+                    #print(np.shape(y_valid_pred))
                     model_pred_valid[stock_name] = pd.Series(y_valid_pred, index = valid_index)
                     model_pred_test[stock_name] = pd.Series(y_test_pred, index = test_index)
 
@@ -211,6 +223,8 @@ class Forecaster:
                     weights_test[model.name] = weights_test[model.name] + [portfolio_test]
         
         for model in models:
+            print(model.name)
+            print(np.shape(forecasts_val[model.name]))
             forecasts_val[model.name] = pd.concat(forecasts_val[model.name], axis = 0)
             forecasts_test[model.name] = pd.concat(forecasts_test[model.name], axis = 0)
             weights_valid[model.name] = pd.concat(weights_valid[model.name], axis = 0)
