@@ -154,7 +154,7 @@ class LSTM(Base):
         return super().fit(train_dataloader, valid_dataloader, self.optimizer, self.model_type)
 
 class CNN(Base):
-    def __init__(self, input_dim, channels, out_dim, model_type):
+    def __init__(self, input_dim, channels, model_type):
         """Convolutional neural network
         
         Args:
@@ -166,26 +166,29 @@ class CNN(Base):
         self.num_iters = 0
         kernel = 3
         linear_expansion = 100
+        self.model_type = model_type
+        output_dim = 1 if model_type == "regression" else 2
         self.model = torch.nn.Sequential(torch.nn.Linear(input_dim, linear_expansion, dtype=torch.float64), torch.nn.ReLU())
-        self.model.append(torch.nn.Conv1d(input_dim, channels[0], kernel, dtype=torch.float64))
+        self.model.append(torch.nn.LazyConv1d(channels[0], kernel, dtype=torch.float64))
         self.model.append(torch.nn.MaxPool1d(kernel))
         #self.model = torch.nn.Sequential(torch.nn.LazyConv1d(channels[0], kernel, dtype=torch.float64), torch.nn.MaxPool1d(kernel))
         if len(channels) > 2: 
             for i in range(len(channels)-2):
                 self.model.append(torch.nn.Conv1d(channels[i], channels[i+1], kernel, dtype=torch.float64))
                 self.model.append(torch.nn.MaxPool1d(kernel))
-        self.out_layer = torch.nn.Sequential(torch.nn.Linear(channels[len(channels)-1], out_dim, dtype=torch.float64), 
+        self.out_layer = torch.nn.Sequential(torch.nn.LazyLinear(output_dim, dtype=torch.float64), 
                                              torch.nn.ReLU()) 
                                              # torch.nn.Linear(channels[len(channels)-1]/kernel, out_dim, dtype=torch.float64))
+        self.final_activation = torch.nn.Sigmoid() if model_type == "classification" else torch.nn.Identity()
         self.optimizer = torch.optim.Adam(self.parameters())
-        self.model_type = model_type
 
     def forward(self, input: torch.Tensor): 
         self.model = self.model.double()
         out = self.model(input)
         # print('model')
-        # print(np.shape(input))
-        out = self.out_layer(torch.flatten(out, start_dim=1))
+        #print(np.shape(torch.flatten(out, start_dim=1)))
+        self.out_layer = self.out_layer.double()
+        out = self.final_activation(self.out_layer(torch.flatten(out, start_dim=1)))
         # print(np.shape(out))
         return out
 
