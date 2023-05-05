@@ -34,6 +34,7 @@ class Base(torch.nn.Module):
             curr_val_loss = 0
             for batch in train_dataloader:
                 x, y = batch
+                y = y.flatten()
                 y = y.long() if model_type == "classification" else y
                 y_hat = self(x)
                 loss = loss_fn(y_hat, y)
@@ -42,6 +43,7 @@ class Base(torch.nn.Module):
                 optimizer.step()
             for batch in validation_dataloader:
                 x, y = batch
+                y = y.flatten()
                 y = y.long() if model_type == "classification" else y
                 y_hat = self(x)
                 val_loss = loss_fn(y_hat, y)
@@ -91,19 +93,27 @@ class LinearRegression(Base):
         return super().fit(train_dataloader, valid_dataloader, self.optimizer)
 
 class MLP(Base):
-    def __init__(self, input_dim, hidden_dim, num_layers, model_type):
+    def __init__(self, input_dim, hidden_dims, model_type):
+        """Multi-layer Perceptron neural network
+
+        Args:
+            input_dim (int): dimension of input layer
+            hidden_dims (): list of hidden layer dimensions
+            model_type (String: "regression" or "classification"): string denoting whether model is to perform regression or classification
+        """
         super().__init__()
         self.input_dim = input_dim
         output_dim = 1 if model_type == "regression" else 2
         self.model_type = model_type
+        print(hidden_dims[0])
         self.layers = torch.nn.Sequential(
-            torch.nn.Linear(input_dim, hidden_dim, dtype=torch.float64),
+            torch.nn.Linear(input_dim, hidden_dims[0], dtype=torch.float64),
             torch.nn.ReLU()
             )
-        for i in range(num_layers-3):
-            self.layers.append(torch.nn.Linear(hidden_dim, hidden_dim, dtype=torch.float64))
+        for i in range(len(hidden_dims)-2):
+            self.layers.append(torch.nn.Linear(hidden_dims[i], hidden_dims[i+1], dtype=torch.float64))
             self.layers.append(torch.nn.ReLU())
-        self.layers.append(torch.nn.Linear(hidden_dim, output_dim, dtype=torch.float64))
+        self.layers.append(torch.nn.Linear(hidden_dims[len(hidden_dims)-1], output_dim, dtype=torch.float64))
         self.final_activation = torch.nn.Sigmoid() if model_type == "classification" else torch.nn.Identity()
         self.optimizer = torch.optim.Adam(self.parameters())
 
@@ -118,10 +128,10 @@ class LSTM(Base):
         """Long-Short Term memory neural network
 
         Args:
-            input_size (_type_): _description_
-            hidden_size (_type_): _description_
-            num_layers (_type_): _description_
-            model_type (_type_): _description_
+            input_size (int): dimension of input
+            hidden_size (int): dimension of hidden layers
+            num_layers (int): number of layers in the model
+            model_type (string: "regression" or "classification"): defines whether model is to perform regression or classification
         """
         super().__init__()
         self.in_dimensions = input_size
@@ -135,29 +145,48 @@ class LSTM(Base):
         self.optimizer = torch.optim.Adam(self.parameters())
 
     def forward(self, x):
-        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size, dtype = torch.float64)
-        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size, dtype = torch.float64)
-        output, _ = self.lstm(x, (h0, c0))
+        #h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size, dtype = torch.float64)
+        #c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size, dtype = torch.float64)
+        output, _ = self.lstm(x) #, (h0, c0)) -> automatically initializes to zeros for (h0, c0)
         return self.final_activation(self.linear(output[:,-1,:])) # (batch_size, hidden_size)
 
     def fit(self, train_dataloader, valid_dataloader):
         return super().fit(train_dataloader, valid_dataloader, self.optimizer, self.model_type)
 
 class CNN(Base):
-    def __init__(self, num_layers, channels, num_classes, model_type):
-        kernel = 1
-        self.model = torch.nn.Sequential(torch.nn.Conv1d(1, channels[0]), torch.nn.MaxPool1D(kernel), torch.nn.ReLU())
-        for i in range(len(channels)-1):
-            self.model.append(torch.nn.Conv1d(channels[i], channels[i+1]))
-            self.model.append(torch.nn.MaxPool1d(kernel))
-            self.model.append(torch.nn.ReLU())
-        self.out_layer = torch.nn.Linear(channels[len(channels)-1], num_classes)
+    def __init__(self, input_dim, channels, out_dim, model_type):
+        """Convolutional neural network
+        
+        Args:
+            input_dim = dimension of input 
+            channels (int): list of channel sizes
+            model_type (String: "regression" or "classification"): string denoting whether model is to perform regression or classification
+        """
+        super().__init__()
+        self.num_iters = 0
+        kernel = 3
+        linear_expansion = 100
+        self.model = torch.nn.Sequential(torch.nn.Linear(input_dim, linear_expansion, dtype=torch.float64), torch.nn.ReLU())
+        self.model.append(torch.nn.Conv1d(input_dim, channels[0], kernel, dtype=torch.float64))
+        self.model.append(torch.nn.MaxPool1d(kernel))
+        #self.model = torch.nn.Sequential(torch.nn.LazyConv1d(channels[0], kernel, dtype=torch.float64), torch.nn.MaxPool1d(kernel))
+        if len(channels) > 2: 
+            for i in range(len(channels)-2):
+                self.model.append(torch.nn.Conv1d(channels[i], channels[i+1], kernel, dtype=torch.float64))
+                self.model.append(torch.nn.MaxPool1d(kernel))
+        self.out_layer = torch.nn.Sequential(torch.nn.Linear(channels[len(channels)-1], out_dim, dtype=torch.float64), 
+                                             torch.nn.ReLU()) 
+                                             # torch.nn.Linear(channels[len(channels)-1]/kernel, out_dim, dtype=torch.float64))
         self.optimizer = torch.optim.Adam(self.parameters())
         self.model_type = model_type
 
-    def forward(self, input: torch.Tensor): # modified from cnn hw
+    def forward(self, input: torch.Tensor): 
+        self.model = self.model.double()
         out = self.model(input)
+        # print('model')
+        # print(np.shape(input))
         out = self.out_layer(torch.flatten(out, start_dim=1))
+        # print(np.shape(out))
         return out
 
     def fit(self, train_dataloader, valid_dataloader):
@@ -166,16 +195,29 @@ class CNN(Base):
 
 class GRU(Base):
     def __init__(self, in_dimensions, hidden_dimensions, num_layers, model_type):
+        """Gated Recurrent Unit neural network
+
+        Args:
+            in_dimensions (int): dimension of input
+            hidden_dimensions (int): dimension of hidden layers
+            num_layers (int): number of layers in the model
+            model_type (string: "regression" or "classification"): defines whether model is to perform regression or classification
+        """
         super().__init__()
         self.in_dimensions = in_dimensions
         self.hidden_dimensions = hidden_dimensions
         self.num_layers = num_layers
-        self.model = torch.nn.GRU(in_dimensions, hidden_dimensions, num_layers, bias=True, device=None, dtype=None)
+        self.model_type = model_type
+        self.output_dim = 1 if self.model_type == "regression" else 2
+        self.model = torch.nn.Sequential(torch.nn.GRU(in_dimensions, hidden_dimensions, num_layers, bias=True, device=None, dtype=torch.float64))
+        self.linear = torch.nn.Linear(hidden_dimensions, self.output_dim, dtype = torch.float64)
+        self.final_activation = torch.nn.Sigmoid() if model_type == "classification" else torch.nn.Identity()
         self.loss_fn = torch.nn.CrossEntropyLoss()
         self.optimizer = torch.optim.Adam(self.parameters())
-        self.model_type = model_type
 
     def forward(self, input):
         output, hn = self.model(input)
-        return output, hn
-
+        return self.final_activation(self.linear(output[:,-1,:]))
+    
+    def fit(self, train_dataloader, valid_dataloader):
+        return super().fit(train_dataloader, valid_dataloader, self.optimizer, self.model_type)
