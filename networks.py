@@ -99,7 +99,7 @@ class MLP(Base):
         Args:
             input_dim (int): dimension of input layer
             hidden_dims (): list of hidden layer dimensions
-            model_type (String: "regression" or "classification"): string denoting whether model is to perform regression or classification
+            model_type (str): "regression" | "classification" defines whether model is to perform regression or classification  
         """
         super().__init__()
         self.input_dim = input_dim
@@ -131,7 +131,7 @@ class LSTM(Base):
             input_size (int): dimension of input
             hidden_size (int): dimension of hidden layers
             num_layers (int): number of layers in the model
-            model_type (string: "regression" or "classification"): defines whether model is to perform regression or classification
+            model_type (str): "regression" | "classification" defines whether model is to perform regression or classification  
         """
         super().__init__()
         self.in_dimensions = input_size
@@ -145,8 +145,6 @@ class LSTM(Base):
         self.optimizer = torch.optim.Adam(self.parameters())
 
     def forward(self, x):
-        #h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size, dtype = torch.float64)
-        #c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size, dtype = torch.float64)
         output, _ = self.lstm(x) #, (h0, c0)) -> automatically initializes to zeros for (h0, c0)
         return self.final_activation(self.linear(output[:,-1,:])) # (batch_size, hidden_size)
 
@@ -156,40 +154,37 @@ class LSTM(Base):
 class CNN(Base):
     def __init__(self, input_dim, channels, model_type):
         """Convolutional neural network
-        
+
         Args:
-            input_dim = dimension of input 
-            channels (int): list of channel sizes
-            model_type (String: "regression" or "classification"): string denoting whether model is to perform regression or classification
+            input_dim (int): input dimension
+            hidden_dim (int): latent space dimension
+            channels (list): number of channels per layer
+            model_type (str): "regression" | "classification" defines whether model is to perform regression or classification  
         """
         super().__init__()
         self.num_iters = 0
-        kernel = 3
+        kernel_size = 5
         linear_expansion = 100
         self.model_type = model_type
         output_dim = 1 if model_type == "regression" else 2
-        self.model = torch.nn.Sequential(torch.nn.Linear(input_dim, linear_expansion, dtype=torch.float64), torch.nn.ReLU())
-        self.model.append(torch.nn.LazyConv1d(channels[0], kernel, dtype=torch.float64))
-        self.model.append(torch.nn.MaxPool1d(kernel))
-        #self.model = torch.nn.Sequential(torch.nn.LazyConv1d(channels[0], kernel, dtype=torch.float64), torch.nn.MaxPool1d(kernel))
-        if len(channels) > 2: 
+        self.dense = torch.nn.Sequential(
+            torch.nn.Linear(input_dim, linear_expansion, dtype=torch.float64), # (batch_size, linear_expansion)
+            torch.nn.ReLU())
+        self.cnn = torch.nn.Sequential(
+            torch.nn.LazyConv1d(channels[0], kernel_size, dtype=torch.float64)
+        )
+        if len(channels) > 2:
             for i in range(len(channels)-2):
-                self.model.append(torch.nn.Conv1d(channels[i], channels[i+1], kernel, dtype=torch.float64))
-                self.model.append(torch.nn.MaxPool1d(kernel))
-        self.out_layer = torch.nn.Sequential(torch.nn.LazyLinear(output_dim, dtype=torch.float64), 
-                                             torch.nn.ReLU()) 
-                                             # torch.nn.Linear(channels[len(channels)-1]/kernel, out_dim, dtype=torch.float64))
+                self.cnn.append(torch.nn.Conv1d(channels[i], channels[i+1], kernel_size, dtype=torch.float64))
+        self.out_layer = torch.nn.Sequential(torch.nn.LazyLinear(output_dim, dtype=torch.float64))
         self.final_activation = torch.nn.Sigmoid() if model_type == "classification" else torch.nn.Identity()
         self.optimizer = torch.optim.Adam(self.parameters())
 
-    def forward(self, input: torch.Tensor): 
-        self.model = self.model.double()
-        out = self.model(input)
-        # print('model')
-        #print(np.shape(torch.flatten(out, start_dim=1)))
-        self.out_layer = self.out_layer.double()
+    def forward(self, input: torch.Tensor):
+        dense_representation = self.dense(input)
+        dense_representation = dense_representation.view(dense_representation.shape[0], 1, dense_representation.shape[1]) # (batch_size, 1, linear_expansion)
+        out = self.cnn(dense_representation)
         out = self.final_activation(self.out_layer(torch.flatten(out, start_dim=1)))
-        # print(np.shape(out))
         return out
 
     def fit(self, train_dataloader, valid_dataloader):
@@ -204,7 +199,7 @@ class GRU(Base):
             in_dimensions (int): dimension of input
             hidden_dimensions (int): dimension of hidden layers
             num_layers (int): number of layers in the model
-            model_type (string: "regression" or "classification"): defines whether model is to perform regression or classification
+            model_type (str): "regression" | "classification" defines whether model is to perform regression or classification  
         """
         super().__init__()
         self.in_dimensions = in_dimensions

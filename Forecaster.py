@@ -106,11 +106,6 @@ class Forecaster:
                         y_train, y_valid, y_test = y_reg_train, y_reg_valid, y_reg_test 
                     else: 
                         y_train, y_valid, y_test = y_classification_train, y_classification_valid, y_classification_test
-
-                    #print(np.shape(y_train))
-                    #print(np.shape(y_valid))
-                    #print(np.shape(y_test))
-            
                     
                     if model.is_rnn:
                         X_full = np.vstack([X_train, X_valid, X_test])
@@ -133,7 +128,7 @@ class Forecaster:
 
                     y_valid_pred = fitted_model.predict(valid_dataloader) if isinstance(cls, torch.nn.Module) else fitted_model.predict(X_valid)
                     y_test_pred = fitted_model.predict(test_dataloader) if isinstance(cls, torch.nn.Module) else fitted_model.predict(X_test)
-                    #print(np.shape(y_valid_pred))
+
                     model_pred_valid[stock_name] = pd.Series(y_valid_pred, index = valid_index)
                     model_pred_test[stock_name] = pd.Series(y_test_pred, index = test_index)
 
@@ -222,9 +217,10 @@ class Forecaster:
                     portfolio_test = pd.DataFrame(portfolio_test, index = date_index_test, columns = stocks_test)
                     weights_test[model.name] = weights_test[model.name] + [portfolio_test]
         
+        valid_index_full = np.concatenate(valid_index_full, axis = 0)
+        test_index_full = np.concatenate(test_index_full, axis = 0)
+        
         for model in models:
-            print(model.name)
-            print(np.shape(forecasts_val[model.name]))
             forecasts_val[model.name] = pd.concat(forecasts_val[model.name], axis = 0)
             forecasts_test[model.name] = pd.concat(forecasts_test[model.name], axis = 0)
             weights_valid[model.name] = pd.concat(weights_valid[model.name], axis = 0)
@@ -234,9 +230,6 @@ class Forecaster:
             if model.type == "regression":
                 opt_param_dict[model.name] = pd.concat(opt_param_dict[model.name], axis = 0)
         
-        valid_index_full = np.concatenate(valid_index_full, axis = 0)
-        test_index_full = np.concatenate(test_index_full, axis = 0)
-
         return forecasts_val, forecasts_test, weights_valid, weights_test, opt_param_dict, valid_index_full, test_index_full
 
 
