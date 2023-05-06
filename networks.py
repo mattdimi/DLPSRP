@@ -219,3 +219,5 @@ class GRU(Base):
     
     def fit(self, train_dataloader, valid_dataloader):
         return super().fit(train_dataloader, valid_dataloader, self.optimizer, self.model_type)
+    
+
