@@ -6,7 +6,7 @@ This repository contains the implementation of our paper, *Comparison of deep le
 
 ## Authors
 
-- [@Sarah Witzmann](https://github.com/sarahwitzman)
+- [@Sarah Witzman](https://github.com/sarahwitzman)
 - [@Mathieu-Savvas Dimitriades](https://github.com/mattdimi)
 ## Documentation
 The package aims at comparing various machine learning algorithms in forecasting stock returns on the CAC 40 and using these forecasts for portfolio optimization.
