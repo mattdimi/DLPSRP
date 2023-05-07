@@ -75,7 +75,7 @@ class Base(torch.nn.Module):
             return torch.cat(predictions).numpy().flatten() # (n,) np.array
     
 class LinearRegression(Base):
-    def __init__(self, input_dim, lr = 1e-3):
+    def __init__(self, input_dim, model_type = "regression", lr = 1e-3):
         """Linear regression model
 
         Args:
@@ -85,6 +85,7 @@ class LinearRegression(Base):
         super().__init__()
         self.linear = torch.nn.Linear(input_dim, 1, dtype = torch.float64)
         self.optimizer = torch.optim.Adam(self.parameters(), lr = lr)
+        self.model_type = model_type
     
     def forward(self, x):
         return self.linear(x)

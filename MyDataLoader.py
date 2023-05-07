@@ -43,6 +43,7 @@ class MyDataLoader:
         french_csi.index = pd.to_datetime(french_csi.index)
         return french_csi
 
+
     def load_full_dataset(self, start = "2009-06-01") -> pd.DataFrame:
         """Returns a pd.DataFrame with the full data
 
@@ -52,13 +53,19 @@ class MyDataLoader:
         Returns:
             pd.DataFrame: _description_
         """
+        
         if self.full_dataset is not None:
             return self.full_dataset
-
+        
         cac_40 = self.load_cac_40_data(start)
         cac_40 = cac_40.reorder_levels([1, 0], axis = 1)
+
+        cac_40_index = yf.download("^FCHI", start=start, ignore_tz=True)
+        cac_40_index = np.log(cac_40_index["Adj Close"]).diff()
+        cac_40_index = pd.Series(cac_40_index.squeeze(), index = cac_40_index.index)
         
         risk_free_rate = cac_40['^IRX', 'Adj Close'].rename("RFR")/(100*252)
+        self.risk_free_rate = risk_free_rate
         
         stocks = cac_40.columns.levels[0].drop(["^FCHI", "^IRX"])
 
@@ -80,7 +87,7 @@ class MyDataLoader:
         french_csi_aligned.update(french_csi)
         french_csi_aligned = french_csi_aligned.ffill().rename("CSI")
         
-        common_index = cac_40.index.intersection(vix.index).intersection(eurusd.index).intersection(french_ur_aligned.index).intersection(french_csi_aligned.index).intersection(risk_free_rate.index)
+        common_index = cac_40.index.intersection(vix.index).intersection(eurusd.index).intersection(french_ur_aligned.index).intersection(french_csi_aligned.index).intersection(risk_free_rate.index).intersection(cac_40_index.index)
 
         lags = self.lags
 
@@ -135,10 +142,10 @@ class MyDataLoader:
 
             stock_features = pd.concat(stock_features, axis = 1)
 
-            res[stock] = stock_features.loc[common_index, :]
+            res[stock] = stock_features.loc[common_index]
 
-        res = pd.concat(res, axis = 1).dropna()
-
+        res = pd.concat(res, axis=1).ffill().dropna(how = 'all').fillna(0.)
+        
         self.full_dataset = res
 
         return res
@@ -175,6 +182,7 @@ class MyDataLoader:
         cac40 = np.log(cac40["Adj Close"]).diff()
         cac40 = pd.Series(cac40.squeeze(), index = cac40.index)
         cac40 = cac40.loc[date_index]
+        self.cac40_index = cac40
         return cac40
 
     def load_risk_free_rate(self, date_index, start = "2009-06-01"):
