@@ -2,5 +2,6 @@
     "lambdas": [0.5, 1, 2, 5],
     "thetas": [0.55, 0.65, 0.75],
     "alphas": [0.2, 0.4, 0.6, 0.8, 1, 1.5, 2, 5],
-    "capital": 1000000
+    "capital": 1000000,
+    "precision_matrix_file_name": "precision_matrix.pkl"
 }
