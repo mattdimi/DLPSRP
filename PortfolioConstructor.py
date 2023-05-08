@@ -25,6 +25,11 @@ class PortfolioConstructor:
         self.lambdas = lambdas
     
     def get_portfolios(self):
+        """Returns the portfolio weights for each date and each set of parameters.
+
+        Returns:
+            tuple: (weights, time index, assets names)
+        """
         
         model = self.model
 

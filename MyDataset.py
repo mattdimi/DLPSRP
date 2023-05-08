@@ -4,7 +4,7 @@ import numpy as np
 class MyDataset(torch.utils.data.Dataset):
 
     def __init__(self, X, y):
-        """Dataset class to load data into a dataset
+        """Dataset class to load data into a torch.utils.data.Dataset dataset.
 
         Args:
             X (np.array): features of shape (number of samples, number of features)

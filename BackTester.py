@@ -9,10 +9,10 @@ class BackTester:
         """Class to run backtests on portfolios
 
         Args:
-            weights (pd.DataFrame): _description_
-            returns (pd.DataFrame): _description_
-            capital (float): _description_
-            risk_free_asset (pd.Series): _description_
+            weights (pd.DataFrame): portfolio weights timeseries
+            returns (pd.DataFrame): returns timeseries
+            capital (float): capital allocation
+            risk_free_asset (pd.Series): returns series of the risk free asset
         """
         self.weights = weights
         self.returns = returns
@@ -24,6 +24,11 @@ class BackTester:
         self.name = name if name is not None else "Strategy"
 
     def run_backtest(self):
+        """Runs the backtest and returns the returns and cumulative returns of the strategy
+
+        Returns:
+            tuple: (pd.Series, pd.Series)
+        """
         turnover = self.weights.diff().abs().dropna().sum(axis = 1)
         weighted_returns = (self.returns*self.weights).dropna()
         weighted_returns = weighted_returns.sum(axis = 1)
@@ -38,6 +43,11 @@ class BackTester:
         return weighted_returns, cum_returns
 
     def get_strategy_cumulative_returns(self):
+        """Returns the cumulative returns of the strategy vs. the benchmark
+
+        Returns:
+            pd.DataFrame: cumulative returns of the strategy vs. the benchmark
+        """
         _, cum_returns = self.run_backtest()
         benchmark = self.benchmark
         benchmark = benchmark.loc[cum_returns.index]
@@ -45,6 +55,11 @@ class BackTester:
         return pd.concat({self.name:cum_returns, "CAC 40":benchmark_cum_returns}, axis = 1)
 
     def get_backtest_statistics(self):
+        """Returns the backtest statistics of the strategy
+
+        Returns:
+            pd.Series: pd.Series containing the backtest statistics
+        """
         
         weighted_rets, _ = self.run_backtest()
 

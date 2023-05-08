@@ -13,6 +13,16 @@ import torch
 class Forecaster:
 
     def __init__(self, dataset, stock_names, time_index, valid_size, test_size, n_splits = 10):
+        """Forecaster class that handles the time series validation and forecasting.
+
+        Args:
+            dataset (pd.DataFrame | np.array): dataset used un the forecasting
+            stock_names (list): stock names used in the forecasting
+            time_index (list): dates considered in the training/validation/test sets
+            valid_size (int): fixed size of the validation set
+            test_size (int): fixed size of the test set
+            n_splits (int, optional): number of splits in the timeseries validation. Defaults to 10.
+        """
         self.dataset = dataset
         self.stock_names = stock_names
         self.time_index = time_index
@@ -21,6 +31,11 @@ class Forecaster:
         self.n_splits = n_splits
 
     def get_tscv_splits(self):
+        """Returns the dataset correctly splitted for the time series validation.
+
+        Returns:
+            iterator: iterator for the time series validation
+        """
         return utils.time_series_cross_validation(self.dataset, self.time_index, self.valid_size, self.test_size, self.n_splits)
 
     def evaluate_test_models(self, models, prec_mat, alphas, thetas, lambdas, capital, stock_returns, risk_free, benchmark_returns = None):
@@ -231,7 +246,3 @@ class Forecaster:
                 opt_param_dict[model.name] = pd.concat(opt_param_dict[model.name], axis = 0)
         
         return forecasts_val, forecasts_test, weights_valid, weights_test, opt_param_dict, valid_index_full, test_index_full
-
-
-        
-        

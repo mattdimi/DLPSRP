@@ -79,16 +79,18 @@ class LinearRegression(Base):
         """Linear regression model
 
         Args:
-            input_dim (_type_): input dimension
-            lr (_type_, optional): learning rate of the optimizer. Defaults to 1e-3.
+            input_dim (int): input dimension
+            model_type (str, optional): "regression" | "classification" defines whether model is to perform regression or classification. Defaults to "regression".
+            lr (float, optional): learning rate of the optimizer. Defaults to 1e-3.
         """
         super().__init__()
         self.linear = torch.nn.Linear(input_dim, 1, dtype = torch.float64)
         self.optimizer = torch.optim.Adam(self.parameters(), lr = lr)
+        self.final_activation = torch.nn.Sigmoid() if model_type == "classification" else torch.nn.Identity()
         self.model_type = model_type
     
     def forward(self, x):
-        return self.linear(x)
+        return self.final_activation(self.linear(x))
     
     def fit(self, train_dataloader, valid_dataloader):
         return super().fit(train_dataloader, valid_dataloader, self.optimizer)
@@ -99,7 +101,7 @@ class MLP(Base):
 
         Args:
             input_dim (int): dimension of input layer
-            hidden_dims (): list of hidden layer dimensions
+            hidden_dims (list): list of hidden layer dimensions
             model_type (str): "regression" | "classification" defines whether model is to perform regression or classification  
         """
         super().__init__()

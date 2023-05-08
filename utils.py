@@ -5,11 +5,15 @@ import yfinance as yf
 from sklearn.model_selection import TimeSeriesSplit
 from scipy.ndimage.interpolation import shift
 import json
-from BackTester import BackTester
 
 def drawdown(return_series: pd.Series):
-    """Takes a time series of asset returns.
-       returns its max drawdown
+    """Returns the drawdown of a return series
+
+    Args:
+        return_series (pd.Series): input return series
+
+    Returns:
+        float: drawdown of the return series
     """
     wealth_index = return_series.cumsum()
     previous_peaks = wealth_index.cummax()
@@ -17,6 +21,18 @@ def drawdown(return_series: pd.Series):
     return drawdowns.abs().max()
 
 def time_series_cross_validation(dataset, time_index, valid_size = 100, test_size = 30, n_splits = 50):
+    """Yields an iterator for the time series validation
+
+    Args:
+        dataset (pd.DataFrame | np.array): dataset used
+        time_index (list): time index of the dataset
+        valid_size (int, optional): fixed validation size. Defaults to 100.
+        test_size (int, optional): fixed test size. Defaults to 30.
+        n_splits (int, optional): number of splits in the timeseries validation. Defaults to 50.
+
+    Yields:
+        tuple: (train data, train time index, validation data, validation time index, test data, test time index)
+    """
     tss = TimeSeriesSplit(n_splits = n_splits, test_size = test_size)
     for train_index, test_index in tss.split(dataset):
         train, test = dataset[train_index, :, :], dataset[test_index, :, :]
@@ -28,49 +44,22 @@ def time_series_cross_validation(dataset, time_index, valid_size = 100, test_siz
         
         yield train, time_index_train, valid, time_index_valid, test, time_index_test
 
-def run_backtests(constructed_portfolios, dataloader, time_index, models, lambdas, alphas, thetas):
-    returns = dataloader.load_returns()
-    risk_free = dataloader.load_risk_free_rate(time_index)
-    capital = 1
-    backtest_results = {}
-    backtest_performances = {}
-    for model in models:
-        model_name = model.name
-        weights, time_index, stocks = constructed_portfolios[model_name]
-        if model.type == "classification":
-            weights_df = pd.DataFrame(weights, index = time_index, columns = stocks)
-            backtester = BackTester(weights_df, returns, capital, risk_free)
-            backtest_stats = backtester.get_backtest_statistics()
-            _, backtest_cumulative_performance = backtester.run_backtest()
-            backtest_results[(model_name, "", "", "")] = backtest_stats
-            backtest_performances[(model_name, "", "", "")] = backtest_cumulative_performance
-
-        elif model.type == "regression":
-            for i, lam in enumerate(lambdas):
-                for j, alpha in enumerate(alphas):
-                    for k, theta in enumerate(thetas):
-                        weights_ijk= weights[i][j][k]
-                        weights_df = pd.DataFrame(weights_ijk, index = time_index, columns = stocks)
-                        backtester = BackTester(weights_df, returns, capital, risk_free)
-                        _, backtest_cumulative_performance = backtester.run_backtest()
-                        backtest_stats = backtester.get_backtest_statistics()
-                        backtest_results[(model_name, lam, alpha, theta)] = backtest_stats
-                        backtest_performances[(model_name, lam, alpha, theta)] = backtest_cumulative_performance
-
-    backtest_results = pd.concat(backtest_results, axis = 1)
-    backtest_results.columns.names = ["Model", "Lambda", "Alpha", "Theta"]
-
-    backtest_performances = pd.concat(backtest_performances, axis = 1)
-    backtest_performances.columns.names = ["Model", "Lambda", "Alpha", "Theta"]
-    
-    return backtest_results, backtest_performances
-
 def load_config():
+    """Load configuration file
+
+    Returns:
+        dict: configuration file in a dictionary
+    """
     with open("config.json") as f:
         config = json.load(f)
     return config
 
 def load_opt_params_tft():
+    """Load optimal parameters for each stock for TFT model
+
+    Returns:
+        dict: optimal parameters for each stock for TFT model in a dictionary
+    """
     with open("opt_params_tft.json") as f:
         opt_params_tft = json.load(f)
     return opt_params_tft

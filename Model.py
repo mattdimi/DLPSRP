@@ -1,17 +1,13 @@
 class Model:
 
-    def __init__(self, 
-                name,
-                type,
-                model_class,
-                is_rnn = False,
-                ):
+    def __init__(self, name, type, model_class, is_rnn = False):
         """Utility class to define a model
 
         Args:
             name (str): Model name
             type (str): `classification` | `regression`
             model_class (_type_): Model instance. Needs to support `fit` and `predict` methods.
+            is_rnn (bool, optional): whether the model is a RNN. Used to adapt the input data format. Defaults to False.
         """
         self.name = name
 

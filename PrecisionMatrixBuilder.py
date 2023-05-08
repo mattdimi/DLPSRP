@@ -9,10 +9,10 @@ class PrecisionMatrixBuilder:
         """Class to compute the precision matrix for a given set of returns and a given set of parameters
 
         Args:
-            returns (_type_): sample returns
-            window (_type_): size of the exponentially weighted moving window
-            alphas (list, optional): list of alphas used in GLASSO
-            thetas (list, optional): list of thetas used in EPO
+            returns (pd.Series): sample returns
+            window (int): size of the exponentially weighted moving window
+            alphas (list[float], optional): list of alphas used in GLASSO
+            thetas (list[float], optional): list of thetas used in EPO
         """
         self.returns = returns
         self.window = window

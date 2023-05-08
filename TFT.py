@@ -1,8 +1,5 @@
-# TFT fine-tuning
-
-# Given the training and validation sets, we fine-tune the time-fusion transformer model for each stock using `optuna`.
-
-# %%
+# %% TFT training and fine-tuning
+# Import libraries
 import pandas as pd
 import datetime as dt
 import warnings
@@ -20,50 +17,35 @@ from pytorch_forecasting.models.temporal_fusion_transformer.tuning import optimi
 import torch
 import pytorch_lightning as pl
 from sklearn.preprocessing import StandardScaler
-
-pd.options.display.max_columns = 500
-pd.options.display.max_rows = 500
-
 import json
 from Model import Model
-import inspect
 from torch.utils.data import DataLoader
-
 from PrecisionMatrixBuilder import PrecisionMatrixBuilder
 from Forecaster import Forecaster
 from MyDataLoader import MyDataLoader
 from PortfolioConstructor import PortfolioConstructor
 from BackTester import BackTester
 
-# %%
+# %% Load data
 dataloader = MyDataLoader()
 full_dataset, stock_names, time_index = dataloader.load_full_dataset_array()
 column_names = dataloader.load_feature_names()
-
-# %%
 full_dataset = full_dataset[:, :, [k for k in range(len(column_names)) if column_names[k] != "SGN"]]
-column_names.pop(1) # drop SGN
-
-# %%
+column_names.pop(1) # drop SGN for regression and returns for classification
+returns = dataloader.load_returns()
+benchmark_returns = dataloader.load_benchmark(date_index=time_index)
+risk_free = dataloader.load_risk_free_rate(time_index)
+# %% Load config parameters
 config = utils.load_config()
 alphas = config["alphas"]
 thetas = config["thetas"]
 lambdas = config["lambdas"]
 capital = config["capital"]
-
-# %%
-returns = dataloader.load_returns()
-
-# %%
-benchmark_returns = dataloader.load_benchmark(date_index=time_index)
-risk_free = dataloader.load_risk_free_rate(time_index)
-
 # %%
 tscv = list(utils.time_series_cross_validation(full_dataset, time_index, n_splits=10, valid_size=66, test_size=66))
 train, time_index_train, valid, time_index_valid, test, time_index_test = tscv[0]
 
-# %%
-# We determine, for each stock, its list of optimal parameters:
+# %% Given the training and validation sets, we fine-tune the time-fusion transformer model for each stock using `optuna`. We determine, for each stock, its list of optimal parameters:
 best_trials_params = {}
 best_trials_losses = {}
 train, time_index_train, valid, time_index_valid, test, time_index_test = tscv[0]
@@ -131,24 +113,12 @@ with open("best_trials_losses.json", "w") as f:
 with open("TFT_best_trials_params.json") as f:
     opt_params = json.load(f)
 
-# %%
-config = utils.load_config()
-alphas = config["alphas"]
-thetas = config["thetas"]
-lambdas = config["lambdas"]
-capital = config["capital"]
-returns = dataloader.load_returns()
-
-# %%
+# %% Load precision matrix
 import pickle
 with open("precision_mat.pkl", "rb") as f:
     prec_mat = pickle.load(f)
 
-# %%
-benchmark_returns = dataloader.load_benchmark(date_index=time_index)
-risk_free = dataloader.load_risk_free_rate(time_index)
-
-# %%
+# %% Use pytorch lightning to train the model
 early_stop_callback = EarlyStopping(
     monitor="val_loss",
     min_delta=1e-3,
@@ -406,30 +376,8 @@ test_index_full = np.concatenate(test_index_full, axis = 0)
 weights_test[model.name] = pd.concat(weights_test[model.name], axis = 0)
 weights_valid[model.name] = pd.concat(weights_valid[model.name], axis = 0)
 
-# %%
-weights_test[model.name].to_csv('weights_test_tft_classification.csv')
-weights_valid[model.name].to_csv('weights_valid_tft_classification.csv')
-forecasts_val.to_csv('forecasts_val_tft_classification.csv')
-forecasts_test.to_csv('forecasts_test_tft_classification.csv')
-
-# %%
+# %% Backtest weights obtained
 backtest = BackTester(weights_test[model.name] , returns, capital, risk_free, benchmark=benchmark_returns, name = "Temporal Fusion Transformer")
 rets, cum_rets = backtest.run_backtest()
 backtest_statistics = backtest.get_backtest_statistics()
 cum_returns = backtest.get_strategy_cumulative_returns()
-# forecasts_test_sign = 2*forecasts_test-1 # classification in 0/1
-# cum_returns["Missclassification rate"] = (forecasts_test_sign != np.sign(returns.loc[test_index_full, :])).abs().mean(axis = 1).cumsum()
-cum_returns["MSE"] = (forecasts_test - returns.loc[test_index_full, :]).apply(lambda x: x**2).mean(axis = 1)
-
-fig, ax1 = plt.subplots()
-ax2 = ax1.twinx()
-cum_returns.plot(y = ["Temporal Fusion Transformer", "CAC 40"], ax = ax1, figsize = (15, 10))
-cum_returns.plot(y = "MSE", ax = ax2, color = "red")
-ax1.set_ylabel("Cumulative returns")
-ax2.set_ylabel("MSE")
-
-# %%
-backtest_statistics
-
-# %%
-backtest_statistics.to_csv(f"Statistics/backtestbacktest_statistics_tft_{model.type}.csv")

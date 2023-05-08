@@ -8,13 +8,24 @@ import datetime as dt
 from scipy.ndimage.interpolation import shift
 
 class MyDataLoader:
-
+    """
+    Data loader class for the project
+    Handles all the data loading and preprocessing
+    """
     def __init__(self) -> None:
         self.full_dataset = None
         self.risk_free_rate = None
         self.lags = [5, 10, 15, 20, 25, 30]
 
     def load_cac_40_data(self, start = "2009-06-01"):
+        """Loads the cac40 stock data from yahoo finance
+
+        Args:
+            start (str, optional): start date in the format yyyy-mm-dd. Defaults to "2009-06-01".
+
+        Returns:
+            pd.DataFrame: pd.DataFrame containing the stock data
+        """
         cac40_assets = pd.read_html('https://en.wikipedia.org/wiki/CAC_40')[4]
         tickers = cac40_assets.Ticker
         tickers = list(tickers)
@@ -26,19 +37,45 @@ class MyDataLoader:
         return tickers
 
     def load_vix(self, start = "2009-06-01"):
+        """Loads VIX data from yahoo finance
+
+        Args:
+            start (str, optional): start date in the format yyyy-mm-dd. Defaults to "2009-06-01".
+
+        Returns:
+            pd.Series: pd.Series of the VIX prices
+        """
         vix = yf.download("^VIX", start = start, ignore_tz = True)
         return vix['Adj Close']
 
     def load_eur_usd_ex_rate(self, start = "2009-06-01"):
+        """Loads EUR/USD exchange rate from yahoo finance
+
+        Args:
+            start (str, optional): start date in the format yyyy-mm-dd. Defaults to "2009-06-01".
+
+        Returns:
+            pd.Series: pd.Series of the EUR/USD exchange rate
+        """
         eur_usd = yf.download("EURUSD=X", start = start, ignore_tz = True)
         return eur_usd['Adj Close']
 
     def load_french_ur(self):
+        """Loads the french unemployment rate from FRED
+
+        Returns:
+            pd.Series: pd.Series of the french unemployment rate
+        """
         french_ur = pd.read_csv("data/LRHUTTTTFRM156S.csv", index_col = 0)
         french_ur.index = pd.to_datetime(french_ur.index)
         return french_ur
 
     def load_french_consumer_sentiment_index(self):
+        """Loads the french consumer sentiment index from FRED
+
+        Returns:
+            pd.Series: pd.Series of the french consumer sentiment index
+        """
         french_csi = pd.read_csv("data/CSCICP03FRM665S.csv", index_col = 0)
         french_csi.index = pd.to_datetime(french_csi.index)
         return french_csi
@@ -48,10 +85,10 @@ class MyDataLoader:
         """Returns a pd.DataFrame with the full data
 
         Args:
-            start (str, optional): _description_. Defaults to "2009-06-01".
+            start (str, optional): start date in the format yyyy-mm-dd. Defaults to "2009-06-01".
 
         Returns:
-            pd.DataFrame: _description_
+            pd.DataFrame: pd.DataFrame with multiindex columns containing the full data
         """
         
         if self.full_dataset is not None:
@@ -166,7 +203,7 @@ class MyDataLoader:
             start (str, optional): Start time. Defaults to "2009-06-01".
 
         Returns:
-            _type_: np.array of shape (number of timesteps, stocks, features), list of stock names, np.array of time index
+            np.array: np.array of shape (number of timesteps, stocks, features), list of stock names, np.array of time index
         """
         df = self.load_full_dataset(start)
         stock_names = df.columns.levels[0]
@@ -178,6 +215,15 @@ class MyDataLoader:
         return np.array(res).transpose(1, 0, 2), stock_names, time_index
 
     def load_benchmark(self, date_index, start = "2009-06-01"):
+        """Loads CAC40 index benchmark returns
+
+        Args:
+            date_index (list): date index to align the benchmark with
+            start (str, optional): start date in the format yyyy-mm-dd. Defaults to "2009-06-01".
+
+        Returns:
+            pd.Series: pd.Series of the benchmark returns
+        """
         cac40 = yf.download("^FCHI", start=start, ignore_tz=True)
         cac40 = np.log(cac40["Adj Close"]).diff()
         cac40 = pd.Series(cac40.squeeze(), index = cac40.index)
@@ -186,6 +232,15 @@ class MyDataLoader:
         return cac40
 
     def load_risk_free_rate(self, date_index, start = "2009-06-01"):
+        """Load the risk free rate (3-month treasury yield)
+
+        Args:
+            date_index (list): date index to align the risk free rate with
+            start (str, optional): start date in the format yyyy-mm-dd. Defaults to "2009-06-01".
+
+        Returns:
+            pd.Series: pd.Series of the risk free rate
+        """
         if self.risk_free_rate is not None:
             return self.risk_free_rate
         treasury_yied_3mo = yf.download("^IRX", start=start, ignore_tz=True)/(100*252)
@@ -195,6 +250,11 @@ class MyDataLoader:
         return treasury_yied_3mo
     
     def load_returns(self):
+        """Loads the returns of the stocks considered
+
+        Returns:
+            pd.DataFrame: pd.DataFrame of the returns of the stocks considered
+        """
         dataset, stock_names, time_index = self.load_full_dataset_array()
         n_stocks = dataset.shape[1]
         returns = np.zeros((len(time_index), n_stocks))
@@ -207,6 +267,11 @@ class MyDataLoader:
         return returns
     
     def load_returns_with_risk_free(self):
+        """Loads the returns of the stocks considered with the risk free rate
+
+        Returns:
+            pd.DataFrame: pd.DataFrame of the returns of the stocks considered with the risk free rate
+        """
         dataset, stock_names, time_index = self.load_full_dataset_array()
         n_stocks = dataset.shape[1]
         returns = np.zeros((len(time_index), n_stocks))
