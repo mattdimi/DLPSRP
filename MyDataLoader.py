@@ -17,7 +17,7 @@ class MyDataLoader:
         self.risk_free_rate = None
         self.lags = [5, 10, 15, 20, 25, 30]
 
-    def load_cac_40_data(self, start = "2009-06-01"):
+    def load_cac_40_data(self, start = "2009-06-01", end = "2023-03-30"):
         """Loads the cac40 stock data from yahoo finance
 
         Args:
@@ -31,12 +31,13 @@ class MyDataLoader:
         tickers = list(tickers)
         tickers.remove('STLAP.PA')
         tickers.remove('WLN.PA')
+        tickers.remove('URW.PA')
         index = ["^FCHI"]
         risk_free = ["^IRX"]
-        tickers = yf.download(list(tickers) + index + risk_free, start = start, ignore_tz = True)
+        tickers = yf.download(list(tickers) + index + risk_free, start = start, end = end, ignore_tz = True)
         return tickers
 
-    def load_vix(self, start = "2009-06-01"):
+    def load_vix(self, start = "2009-06-01", end = "2023-03-30"):
         """Loads VIX data from yahoo finance
 
         Args:
@@ -45,10 +46,10 @@ class MyDataLoader:
         Returns:
             pd.Series: pd.Series of the VIX prices
         """
-        vix = yf.download("^VIX", start = start, ignore_tz = True)
+        vix = yf.download("^VIX", start = start, end = end, ignore_tz = True)
         return vix['Adj Close']
 
-    def load_eur_usd_ex_rate(self, start = "2009-06-01"):
+    def load_eur_usd_ex_rate(self, start = "2009-06-01", end = "2023-03-30"):
         """Loads EUR/USD exchange rate from yahoo finance
 
         Args:
@@ -57,7 +58,7 @@ class MyDataLoader:
         Returns:
             pd.Series: pd.Series of the EUR/USD exchange rate
         """
-        eur_usd = yf.download("EURUSD=X", start = start, ignore_tz = True)
+        eur_usd = yf.download("EURUSD=X", start = start, end = end, ignore_tz = True)
         return eur_usd['Adj Close']
 
     def load_french_ur(self):
@@ -81,7 +82,7 @@ class MyDataLoader:
         return french_csi
 
 
-    def load_full_dataset(self, start = "2009-06-01") -> pd.DataFrame:
+    def load_full_dataset(self, start = "2009-06-01", end = "2023-03-30") -> pd.DataFrame:
         """Returns a pd.DataFrame with the full data
 
         Args:
@@ -94,10 +95,10 @@ class MyDataLoader:
         if self.full_dataset is not None:
             return self.full_dataset
         
-        cac_40 = self.load_cac_40_data(start)
+        cac_40 = self.load_cac_40_data(start, end)
         cac_40 = cac_40.reorder_levels([1, 0], axis = 1)
 
-        cac_40_index = yf.download("^FCHI", start=start, ignore_tz=True)
+        cac_40_index = yf.download("^FCHI", start=start, end=end, ignore_tz=True)
         cac_40_index = np.log(cac_40_index["Adj Close"]).diff()
         cac_40_index = pd.Series(cac_40_index.squeeze(), index = cac_40_index.index)
         
@@ -106,10 +107,10 @@ class MyDataLoader:
         
         stocks = cac_40.columns.levels[0].drop(["^FCHI", "^IRX"])
 
-        vix = self.load_vix(start).rename("VIX")
+        vix = self.load_vix(start, end).rename("VIX")
         vix = pd.Series(vix.squeeze(), index = vix.index)
 
-        eurusd = self.load_eur_usd_ex_rate(start).rename("EURUSD").dropna()
+        eurusd = self.load_eur_usd_ex_rate(start, end).rename("EURUSD").dropna()
         eurusd = pd.Series(eurusd.squeeze(), index = eurusd.index)
 
         french_ur = self.load_french_ur().squeeze()
@@ -181,7 +182,7 @@ class MyDataLoader:
 
             res[stock] = stock_features.loc[common_index]
 
-        res = pd.concat(res, axis=1).ffill().dropna(how = 'all').fillna(0.)
+        res = pd.concat(res, axis=1).dropna(axis = 0, how = "all").ffill().dropna(axis = 0, how = "any")
         
         self.full_dataset = res
 

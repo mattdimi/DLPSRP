@@ -108,7 +108,6 @@ class MLP(Base):
         self.input_dim = input_dim
         output_dim = 1 if model_type == "regression" else 2
         self.model_type = model_type
-        print(hidden_dims[0])
         self.layers = torch.nn.Sequential(
             torch.nn.Linear(input_dim, hidden_dims[0], dtype=torch.float64),
             torch.nn.ReLU()

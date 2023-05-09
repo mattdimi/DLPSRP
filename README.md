@@ -48,7 +48,7 @@ You should be able to see the advancement bar of the model being trained once th
 For further reference, extensive tests have been conducted in the Jupyter notebooks: `CNN_ModelTesting.ipynb`, `LinearModels.ipynb` and `ModelTesting.ipynb`.
 
 ## Results
-We obtain the following results for each model type considered (only best model included):
+We obtain the following results for each model type considered (only best model per model type included):
 
 |                  | Yearly returns | Yearly volatility | Yearly Sharpe ratio |
 |------------------|---------------|------------------|---------------------|
