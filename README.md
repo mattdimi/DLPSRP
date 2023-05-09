@@ -1,7 +1,10 @@
 
 # Comparison of deep learning algorithms for forecasting stock returns and portfolio optimization
 
-This repository contains the implementation of our paper, *Comparison of deep learning algorithms for forecasting stock returns and portfolio optimization*, as part of our final project for the course **MAE 576: Deep Learning in Physical Systems**. The paper `Paper.pdf`, its extended abstract `Extended abstract.pdf` and a presentation of the main results in the paper `Final Presentation.pdf` are made available in the repository. 
+This repository contains the implementation of our paper, *Comparison of deep learning algorithms for forecasting stock returns and portfolio optimization*, as part of our final project for the course **MAE 576: Deep Learning in Physical Systems**. This repository includes the paper, its extended abstract and a presentation of the paper:
+- `Paper.pdf`: paper
+- `Extended abstract.pdf`: extended abstract
+- `Final Presentation.pdf`: presentation of the main results in the paper
 
 ## Authors
 
@@ -9,7 +12,9 @@ This repository contains the implementation of our paper, *Comparison of deep le
 - [@Mathieu-Savvas Dimitriades](https://github.com/mattdimi)
 
 ## Documentation
-The package aims at comparing various machine learning algorithms in forecasting stock returns on the CAC 40 and using these forecasts for portfolio optimization.
+The package aims at:
+- Comparing various machine learning algorithms in forecasting stock returns on the CAC40
+- Using these forecasts for portfolio optimization
 
 The repository can be broken down into three main parts:
 
@@ -22,7 +27,7 @@ These modules are responsible for data preparation and standardization:
 ### Portfolio optimization modules
 These modules are responsible for building the precision matrix of the returns, performing portfolio construction given a set of expected returns, and backtesting the strategies considered:
 
-- `BackTester.py`: Class to run backtests on portfolios.
+- `BackTester.py`: Portfolio backtesting (i.e. testing on historical data) class.
 - `PortfolioConstructor.py`: Portfolio construction class. Support regression and classification models.
 - `PrecisionMatrixBuilder.py`: Class to compute the precision matrix for a given set of returns and a given set of parameters.
 
@@ -51,27 +56,27 @@ For further reference, extensive tests have been conducted in the Jupyter notebo
 ## Results
 We obtain the following results for each model type considered (only best model per model type included):
 
-|                  | Yearly returns | Yearly volatility | Yearly Sharpe ratio |
+| Benchmark        | Yearly returns | Yearly volatility | Yearly Sharpe ratio |
 |------------------|---------------|------------------|---------------------|
 | CAC40            | 13.2%         | 18.9%            | 0.7                 |
 
-| Model    | Yearly returns | Yearly volatility | Yearly Sharpe ratio | Total mean-squared error |
-|----------|----------------|-------------------|---------------------|-------------------------|
-| LASSO    | -92.2%         | 72.7%             | -1.27               | 0.46                    |
-| MLP      | -2.9%          | 3.3%              | -0.87               | 0.28                    |
-| **CNN**  | **404.1%**     | **414.5%**        | **0.97**            | **25.94**               |
-| LSTM     | 32.8%          | 140.8%            | 0.23                | 9.95                    |
-| GRU      | -37.5%         | 125.7%            | -0.29               | 13.33                   |
-| TFT      | -32.3%         | 10.0%             | -3.2                | 0.39                    |
+| Regression Model | Yearly returns | Yearly volatility | Yearly Sharpe ratio | Total mean-squared error |
+|------------------|----------------|-------------------|---------------------|-------------------------|
+| LASSO            | -92.2%         | 72.7%             | -1.27               | 0.46                    |
+| MLP              | -2.9%          | 3.3%              | -0.87               | 0.28                    |
+| **CNN**          | **404.1%**     | **414.5%**        | **0.97**            | **25.94**               |
+| LSTM             | 32.8%          | 140.8%            | 0.23                | 9.95                    |
+| GRU              | -37.5%         | 125.7%            | -0.29               | 13.33                   |
+| TFT              | -32.3%         | 10.0%             | -3.2                | 0.39                    |
 
-| Model          | Yearly returns | Yearly volatility | Yearly Sharpe ratio | Misclassification rate |
-|----------------|----------------|-------------------|---------------------|-----------------------|
-| Logistic Reg   | -182.3%        | 13.4%             | -13.6               | 50.4%                 |
-| MLP            | 1.6%           | 12.1%             | -0.13               | 48.5%                 |
-| **CNN**        | **64.4%**      | **66.1%**         | **0.97**            | **47.2%**             |
-| LSTM           | -376.3%        | 14.7%             | -25.5               | 52.8%                 |
-| GRU            | -399.9%        | 14.4%             | -27.8               | 49.0%                 |
-| TFT            | 0.5%           | 9.3%              | 0.0055              | 49.1%                 |
+| Classification Model | Yearly returns | Yearly volatility | Yearly Sharpe ratio | Misclassification rate |
+|----------------------|----------------|-------------------|---------------------|-----------------------|
+| Logistic Reg         | -182.3%        | 13.4%             | -13.6               | 50.4%                 |
+| MLP                  | 1.6%           | 12.1%             | -0.13               | 48.5%                 |
+| **CNN**              | **64.4%**      | **66.1%**         | **0.97**            | **47.2%**             |
+| LSTM                 | -376.3%        | 14.7%             | -25.5               | 52.8%                 |
+| GRU                  | -399.9%        | 14.4%             | -27.8               | 49.0%                 |
+| TFT                  | 0.5%           | 9.3%              | 0.0055              | 49.1%                 |
 
 ## References
 1. Huang, J., Chai, J., Cho, S. (2020). "Deep learning in finance and banking: A literature review and classification." 
