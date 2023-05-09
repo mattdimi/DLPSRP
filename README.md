@@ -15,27 +15,27 @@ The repository can be broken down into three main parts:
 ### Data modules
 These modules are responsible for data preparation and standardization:
 
-- `MyDataLoader.py`: Class to load the data used
-- `MyDataset.py`: Dataset class to load data into a `torch.utils.data.Dataset`
+- `MyDataLoader.py`: Class to load the data used.
+- `MyDataset.py`: Dataset class to load data into a `torch.utils.data.Dataset`.
 
 ### Portfolio optimization modules
 These modules are responsible for building the precision matrix of the returns, performing portfolio construction given a set of expected returns, and backtesting the strategies considered:
 
-- `BackTester.py`: Class to run backtests on portfolios
+- `BackTester.py`: Class to run backtests on portfolios.
 - `PortfolioConstructor.py`: Portfolio construction class. Support regression and classification models.
 - `PrecisionMatrixBuilder.py`: Class to compute the precision matrix for a given set of returns and a given set of parameters.
 
 ### Forecasting modules
 These modules are responsible for defining the deep learning models considered in this study and using these models to generate forecasts:
 
-- `networks.py`: Class that encompasses all the networks considered in this study except for TFT
-- `TFT.py`: Module to fine-tune, train and test the Temporal Fusion Transformer. Temporal Fusion Transformer having a very specific architecture, we choose to dedicate a whole module for it
-- `Model.py`: Class to define a model by its name, type (`classification` | `regression`) and class which is the actual trainable model
+- `networks.py`: Class that encompasses all the networks considered in this study except for TFT.
+- `TFT.py`: Module to fine-tune, train and test the Temporal Fusion Transformer. Temporal Fusion Transformer having a very specific architecture, we choose to dedicate a whole module for it.
+- `Model.py`: Class to define a model by its name, type (`classification` | `regression`) and class which is the actual trainable model.
 - `Forecaster.py`: Class to build forecasts on a given dataset given a set of different models.
 
 ## Requirements and installation
 
-To be able to run the code in the package and the notebooks, please install the package requirements using the command from your CLI:
+To be able to run the code in the package and the notebooks, please install the package requirements using the following command from your CLI:
 
 `pip install -r requirements.txt`
 
