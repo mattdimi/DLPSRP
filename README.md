@@ -29,7 +29,7 @@ These modules are responsible for building the precision matrix of the returns, 
 These modules are responsible for defining the deep learning models considered in this study and using these models to generate forecasts:
 
 - `networks.py`: Class that encompasses all the networks considered in this study except for TFT
-- `TFT.py`: Module to fine-tune, train and test the Temporal Fusion Transformer being very specific, we choose to dedicate a whole module for it
+- `TFT.py`: Module to fine-tune, train and test the Temporal Fusion Transformer. Temporal Fusion Transformer having a very specific architecture, we choose to dedicate a whole module for it
 - `Model.py`: Class to define a model by its name, type (`classification` | `regression`) and class which is the actual trainable model
 - `Forecaster.py`: Class to build forecasts on a given dataset given a set of different models.
 
