@@ -1,12 +1,13 @@
 
 # Comparison of deep learning algorithms for forecasting stock returns and portfolio optimization
 
-This repository contains the implementation of our paper, *Comparison of deep learning algorithms for forecasting stock returns and portfolio optimization*, as part of our final project for the course **MAE 576: Deep Learning in Physical Systems**.
+This repository contains the implementation of our paper, *Comparison of deep learning algorithms for forecasting stock returns and portfolio optimization*, as part of our final project for the course **MAE 576: Deep Learning in Physical Systems**. The paper `Paper.pdf`, its extended abstract `Extended abstract.pdf` and a presentation of the main results in the paper `Final Presentation.pdf` are made available in the repository. 
 
 ## Authors
 
 - [@Sarah Witzman](https://github.com/sarahwitzman)
 - [@Mathieu-Savvas Dimitriades](https://github.com/mattdimi)
+
 ## Documentation
 The package aims at comparing various machine learning algorithms in forecasting stock returns on the CAC 40 and using these forecasts for portfolio optimization.
 
